@@ -31,3 +31,5 @@ curl -s -u "elastic:${ELASTIC_PASSWORD}" -X POST \
 
 docker compose up -d kibana
 echo "Kibana : http://10.77.77.10:5601 (utilisateur elastic)"
+
+docker compose up -d fleet-server
