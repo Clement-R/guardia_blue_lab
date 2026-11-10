@@ -14,7 +14,8 @@ Vagrant.configure("2") do |config|
     m.vm.hostname = "siem"
     m.vm.network "private_network", ip: "#{NET}.10"
     m.vm.network "forwarded_port", guest: 22, host: 2222, id: "ssh"
-    m.vm.synced_folder ".", "/vagrant"
+    m.vm.synced_folder ".", "/vagrant", type: "rsync",
+      rsync__exclude: [".git/", ".vagrant/"]
     
     m.vm.provider "virtualbox" do |vb|
       vb.name = "lab-siem"
