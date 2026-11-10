@@ -28,6 +28,8 @@ Vagrant.configure("2") do |config|
      m.vm.provider "libvirt" do |libvirt|
       libvirt.driver = "kvm"
       libvirt.uri = 'qemu:///system'
+      libvirt.memory = 6144
+      libvirt.cpus = 2
     end
 
     m.vm.provision "shell", path: "provision/linux-base.sh"
