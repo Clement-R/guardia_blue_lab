@@ -30,6 +30,6 @@ curl -s -u "elastic:${ELASTIC_PASSWORD}" -X POST \
   -d "{\"password\":\"${KIBANA_PASSWORD}\"}"
 
 docker compose up -d kibana
-echo "Kibana : http://10.77.77.10:5601 (utilisateur elastic)"
+echo "Kibana : http://10.77.77.10:5601 (user: elastic)"
 
 docker compose up -d fleet-server

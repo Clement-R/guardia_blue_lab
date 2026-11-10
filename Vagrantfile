@@ -14,23 +14,15 @@ Vagrant.configure("2") do |config|
     m.vm.hostname = "siem"
     m.vm.network "private_network", ip: "#{NET}.10"
     m.vm.network "forwarded_port", guest: 22, host: 2222, id: "ssh"
-    m.vm.disk :disk, size: "40GB", primary: true
     m.vm.synced_folder ".", "/vagrant", type: "rsync",
       rsync__exclude: [".git/", ".vagrant/"]
     
-    m.vm.provider "virtualbox" do |vb|
-      vb.name = "lab-siem"
-      vb.memory = 6144
-      vb.cpus = 2
-      # Promiscuous mode on card 2 (host-only) to see all east/west traffic
-      vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
-    end
-
      m.vm.provider "libvirt" do |libvirt|
       libvirt.driver = "kvm"
       libvirt.uri = 'qemu:///system'
       libvirt.memory = 6144
       libvirt.cpus = 2
+      libvirt.machine_virtual_size = 40
     end
 
     m.vm.provision "shell", path: "provision/linux-base.sh"
