@@ -37,10 +37,8 @@ services:
   
   fleet-server:
       depends_on:
-        kibana:
-          condition: service_healthy
-        elasticsearch:
-          condition: service_healthy
+        - kibana
+        - elasticsearch
       image: docker.elastic.co/elastic-agent/elastic-agent:${STACK_VERSION}
       container_name: ecp-fleet-server
       ports:
