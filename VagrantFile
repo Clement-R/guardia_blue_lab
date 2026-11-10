@@ -10,7 +10,7 @@ Vagrant.configure("2") do |config|
 
   # --- SIEM: Linux ---
   config.vm.define "siem" do |m|
-    m.vm.box = " cloud-image/debian-13"
+    m.vm.box = "cloud-image/debian-13"
     m.vm.hostname = "siem"
     m.vm.network "private_network", ip: "#{NET}.10"
     m.vm.network "forwarded_port", guest: 22, host: 2222, id: "ssh"
