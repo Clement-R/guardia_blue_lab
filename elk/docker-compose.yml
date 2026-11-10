@@ -34,6 +34,29 @@ services:
     ports:
       - "5601:5601"
     restart: unless-stopped
+  
+  fleet-server:
+      depends_on:
+        kibana:
+          condition: service_healthy
+        elasticsearch:
+          condition: service_healthy
+      image: docker.elastic.co/elastic-agent/elastic-agent:${STACK_VERSION}
+      container_name: ecp-fleet-server
+      ports:
+        - ${FLEET_PORT}:8220
+      restart: always
+      user: root
+      environment:
+        - FLEET_ENROLL=1
+        - FLEET_SERVER_POLICY_ID=fleet-server-policy
+        - FLEET_SERVER_ENABLE=1
+        - KIBANA_FLEET_SETUP=1
+        - KIBANA_HOST=https://ecp-kibana:5601
+        - FLEET_URL=https://ecp-fleet-server:8220
+        - FLEET_SERVER_ELASTICSEARCH_HOST=https://ecp-elasticsearch:9200
+        - KIBANA_FLEET_USERNAME=elastic
+        - KIBANA_FLEET_PASSWORD=${ELASTIC_PASSWORD}
 
 volumes:
   esdata:
