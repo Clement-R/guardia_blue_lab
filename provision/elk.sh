@@ -87,6 +87,25 @@ if [ -z "${SERVICE_TOKEN:-}" ] || ! curl -sf --cacert "$CA" -H "Authorization: B
   load_env
 fi
 
+# --- Agent policy for the Windows endpoint (System integration added by sys_monitoring) ---
+if ! kb "$KB/api/fleet/agent_policies/windows-endpoint" >/dev/null 2>&1; then
+  kb -X POST "$KB/api/fleet/agent_policies?sys_monitoring=true" \
+    -d '{"id":"windows-endpoint","name":"Windows endpoint","namespace":"default","monitoring_enabled":["logs","metrics"]}' >/dev/null
+  ver=$(kb "$KB/api/fleet/epm/packages/windows" | jq -r '.item.version // .response.version')
+  kb -X POST "$KB/api/fleet/package_policies" \
+    -d "{\"name\":\"windows-1\",\"namespace\":\"default\",\"policy_ids\":[\"windows-endpoint\"],\"package\":{\"name\":\"windows\",\"version\":\"${ver}\"}}" >/dev/null \
+    || echo "WARN: could not add the Windows integration; add it once in Kibana (Fleet > Agent policies)" >&2
+fi
+
+# Bundle for the Windows provisioners, copied to .lab/ on the host by a Vagrant trigger
+mkdir -p /opt/elk/windows
+cp "$CA" /opt/elk/windows/ca.crt
+kb "$KB/api/fleet/enrollment_api_keys?perPage=100" \
+  | jq -r '[.items[] | select(.policy_id=="windows-endpoint" and .active)][0].api_key' > /opt/elk/windows/enrollment-token
+echo "${STACK_VERSION}" > /opt/elk/windows/stack-version
+echo "https://${SIEM_IP}:8220" > /opt/elk/windows/fleet-url
+chmod 600 /opt/elk/windows/*
+
 # --- Fleet Server ---
 docker compose up -d fleet-server
 
