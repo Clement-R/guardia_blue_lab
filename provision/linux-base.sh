@@ -5,7 +5,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
 apt-get -y upgrade
-apt-get install -y git curl jq python3 python3-pip ca-certificates cloud-guest-utils
+apt-get install -y git curl jq openssl python3 python3-pip ca-certificates cloud-guest-utils
 
 # Increase disk size
 growpart /dev/vda 1 || true
