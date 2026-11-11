@@ -32,7 +32,7 @@ Vagrant.configure("2") do |config|
     # for the Windows provisioners. Uses plain ssh to avoid nesting vagrant commands.
     m.trigger.after [:up, :provision, :reload] do |t|
       t.name = "Export Windows enrollment bundle to .lab/"
-      t.run = { inline: "bash -c 'mkdir -p .lab && ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null " \
+      t.run = { inline: "bash -c 'cd #{__dir__} && mkdir -p .lab && ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null " \
                         "-i .vagrant/machines/siem/libvirt/private_key vagrant@#{NET}.10 " \
                         "sudo tar -C /opt/elk/windows -cf - . | tar -C .lab -xf -'" }
     end
@@ -65,7 +65,7 @@ Vagrant.configure("2") do |config|
     end
 
     %w[ca.crt enrollment-token stack-version fleet-url].each do |f|
-      m.vm.provision "bundle-#{f}", type: "file", source: ".lab/#{f}", destination: "C:/lab/#{f}"
+      m.vm.provision "bundle-#{f}", type: "file", source: File.join(__dir__, ".lab", f), destination: "C:/lab/#{f}"
     end
     m.vm.provision "dc", type: "shell", path: "provision/win-dc.ps1", args: ["-Ip", "#{NET}.20", "-Gateway", "#{NET}.1"], reboot: true
     m.vm.provision "dc-post", type: "shell", path: "provision/win-dc-post.ps1", args: ["-Ip", "#{NET}.20", "-Forwarder", "#{NET}.1"]
