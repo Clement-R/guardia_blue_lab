@@ -71,5 +71,7 @@ Vagrant.configure("2") do |config|
     m.vm.provision "dc-post", type: "shell", path: "provision/win-dc-post.ps1", args: ["-Ip", "#{NET}.20", "-Forwarder", "#{NET}.1"]
     m.vm.provision "telemetry", type: "shell", path: "provision/win-telemetry.ps1"
     m.vm.provision "agent", type: "shell", path: "provision/win-agent.ps1"
+    # Run explicitly, after the "clean" snapshot: vagrant provision dc --provision-with art
+    m.vm.provision "art", type: "shell", path: "provision/win-art.ps1", run: "never"
   end
 end
