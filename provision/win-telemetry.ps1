@@ -1,6 +1,7 @@
 # Host telemetry: advanced audit policy (DC-oriented), DCSync audit SACL, PowerShell logging,
 # event channels and log sizes, Sysmon with sysmon-modular. Safe to re-run.
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"   # Windows PowerShell 5.1 downloads are very slow with the progress bar
 New-Item C:\lab -ItemType Directory -Force | Out-Null   # evidence files go here
 
 # --- 1. Advanced audit policy ---

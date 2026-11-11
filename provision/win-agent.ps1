@@ -1,5 +1,6 @@
 # Trust the lab CA, then install Elastic Agent and enrol it into Fleet, with certificate verification.
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"   # Windows PowerShell 5.1 downloads are very slow with the progress bar
 $lab     = "C:\lab"
 $version = (Get-Content "$lab\stack-version" -Raw).Trim()
 $token   = (Get-Content "$lab\enrollment-token" -Raw).Trim()
