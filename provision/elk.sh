@@ -97,6 +97,28 @@ if ! kb "$KB/api/fleet/agent_policies/windows-endpoint" >/dev/null 2>&1; then
     || echo "WARN: could not add the Windows integration; add it once in Kibana (Fleet > Agent policies)" >&2
 fi
 
+# --- Extra Windows event channels (enabled on the DC by win-telemetry.ps1), one
+#     "Custom Windows Event Logs" integration per channel, each with its own dataset ---
+winlog_ver=$(kb "$KB/api/fleet/epm/packages/winlog" | jq -r '.item.version // .response.version')
+kb -X POST "$KB/api/fleet/epm/packages/winlog/${winlog_ver}" >/dev/null 2>&1 || true   # install (no-op if present)
+existing=$(kb "$KB/api/fleet/package_policies?perPage=1000" | jq -r '.items[].name')
+while IFS='|' read -r dataset channel; do
+  name="winlog-${dataset#winlog.}"
+  grep -qx "$name" <<<"$existing" && continue
+  kb -X POST "$KB/api/fleet/package_policies" -d "{
+    \"name\":\"${name}\",\"namespace\":\"default\",\"policy_ids\":[\"windows-endpoint\"],
+    \"package\":{\"name\":\"winlog\",\"version\":\"${winlog_ver}\"},
+    \"inputs\":{\"winlogs-winlog\":{\"enabled\":true,\"streams\":{\"winlog.winlogs\":{\"enabled\":true,
+      \"vars\":{\"channel\":\"${channel}\",\"data_stream.dataset\":\"${dataset}\"}}}}}
+  }" >/dev/null && echo "added ${name} (${channel})" \
+    || echo "WARN: could not add ${name}; add it once in Kibana (Custom Windows Event Logs)" >&2
+done <<'EOF'
+winlog.taskscheduler|Microsoft-Windows-TaskScheduler/Operational
+winlog.bits_client|Microsoft-Windows-Bits-Client/Operational
+winlog.codeintegrity|Microsoft-Windows-CodeIntegrity/Operational
+winlog.wmi_activity|Microsoft-Windows-WMI-Activity/Operational
+EOF
+
 # --- Elastic Defend on the Windows policy: Complete EDR preset, malware in Detect mode,
 #     not registered as the Windows antivirus (Microsoft Defender stays active) ---
 defend_id=$(kb "$KB/api/fleet/package_policies?perPage=100&kuery=ingest-package-policies.package.name:endpoint" \
