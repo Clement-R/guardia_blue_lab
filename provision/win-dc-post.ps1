@@ -26,4 +26,5 @@ Restart-Service w32time
 Start-Sleep 5
 w32tm /resync /force | Out-Null
 w32tm /query /source
-w32tm /stripchart /computer:($NtpPeers -split ",")[0] /samples:2 /dataonly
+$peer = ($NtpPeers -split ",")[0]
+w32tm /stripchart /computer:$peer /samples:2 /dataonly
