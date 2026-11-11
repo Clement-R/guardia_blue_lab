@@ -32,8 +32,8 @@ set_env() {   # set_env KEY VALUE
   if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi
 }
 load_env() { set -a; . ./.env; set +a; }
-es() { curl -sf --cacert "$CA" -u "elastic:${ELASTIC_PASSWORD}" "$@"; }
-kb() { curl -sf --cacert "$CA" -u "elastic:${ELASTIC_PASSWORD}" -H 'kbn-xsrf: true' -H 'Content-Type: application/json' "$@"; }
+es() { curl -sS --fail-with-body --cacert "$CA" -u "elastic:${ELASTIC_PASSWORD}" "$@"; }
+kb() { curl -sS --fail-with-body --cacert "$CA" -u "elastic:${ELASTIC_PASSWORD}" -H 'kbn-xsrf: true' -H 'Content-Type: application/json' "$@"; }
 wait_for() {  # wait_for LABEL COMMAND...
   local label="$1"; shift
   for _ in $(seq 1 90); do "$@" >/dev/null 2>&1 && return 0; sleep 5; done
@@ -62,6 +62,9 @@ kb -X POST "$KB/api/fleet/setup" >/dev/null
 if ! kb "$KB/api/fleet/agent_policies/fleet-server-policy" >/dev/null 2>&1; then
   kb -X POST "$KB/api/fleet/agent_policies?sys_monitoring=false" \
     -d '{"id":"fleet-server-policy","name":"Fleet Server Policy","namespace":"default","has_fleet_server":true}' >/dev/null
+fi
+# has_fleet_server=true already adds the integration on recent versions; add it only if missing
+if ! kb "$KB/api/fleet/agent_policies/fleet-server-policy" | jq -e '[.item.package_policies[]?.package.name] | index("fleet_server")' >/dev/null; then
   ver=$(kb "$KB/api/fleet/epm/packages/fleet_server" | jq -r '.item.version // .response.version')
   kb -X POST "$KB/api/fleet/package_policies" \
     -d "{\"name\":\"fleet_server-1\",\"namespace\":\"default\",\"policy_ids\":[\"fleet-server-policy\"],\"package\":{\"name\":\"fleet_server\",\"version\":\"${ver}\"}}" >/dev/null \
