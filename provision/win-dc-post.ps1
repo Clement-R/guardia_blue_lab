@@ -14,4 +14,4 @@ Get-ADDomain | Select-Object DNSRoot, NetBIOSName, DomainMode | Format-List
 dnscmd /ResetListenAddresses $Ip | Out-Null
 Set-DnsServerForwarder -IPAddress $Forwarder
 Restart-Service DNS
-Resolve-DnsName artifacts.elastic.co -Type A | Select-Object -First 1 | Format-Table Name, IPAddress
+Resolve-DnsName artifacts.elastic.co -Type A | Where-Object Type -eq 'A' | Select-Object -First 1 | Format-Table Name, IPAddress

@@ -1,6 +1,7 @@
 # Host telemetry: advanced audit policy (DC-oriented), DCSync audit SACL, PowerShell logging,
 # event channels and log sizes, Sysmon with sysmon-modular. Safe to re-run.
 $ErrorActionPreference = "Stop"
+New-Item C:\lab -ItemType Directory -Force | Out-Null   # evidence files go here
 
 # --- 1. Advanced audit policy ---
 # Subcategory settings win over legacy category settings; 4688 carries the command line
@@ -11,6 +12,7 @@ New-Item $p -Force | Out-Null
 Set-ItemProperty $p ProcessCreationIncludeCmdLine_Enabled 1 -Type DWord
 
 auditpol /backup /file:C:\lab\auditpol-before.csv | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "auditpol backup failed" }
 $audit = @(
   # subcategory,                        success, failure
   @("Process Creation",                     $true,  $false),
@@ -90,7 +92,8 @@ $dir = "C:\lab\sysmon"
 New-Item $dir -ItemType Directory -Force | Out-Null
 Invoke-WebRequest https://download.sysinternals.com/files/Sysmon.zip -OutFile "$dir\Sysmon.zip" -UseBasicParsing
 Expand-Archive "$dir\Sysmon.zip" $dir -Force
-Invoke-WebRequest https://raw.githubusercontent.com/olafhartong/sysmon-modular/master/sysmonconfig.xml `
+# sysmon-modular publishes generated configs as releases (same release as the reference build)
+Invoke-WebRequest https://github.com/olafhartong/sysmon-modular/releases/download/configs-a45dedb13a43/sysmonconfig.xml `
   -OutFile "$dir\sysmonconfig.xml" -UseBasicParsing
 if (Get-Service Sysmon64 -ErrorAction SilentlyContinue) {
   & "$dir\Sysmon64.exe" -accepteula -c "$dir\sysmonconfig.xml"
