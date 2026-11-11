@@ -15,9 +15,15 @@ if (Get-Service "Elastic Agent" -ErrorAction SilentlyContinue) {
 }
 
 $name = "elastic-agent-$version-windows-x86_64"
-Invoke-WebRequest "https://artifacts.elastic.co/downloads/beats/elastic-agent/$name.zip" `
-  -OutFile "$lab\$name.zip" -UseBasicParsing
-Expand-Archive "$lab\$name.zip" $lab -Force
+# curl.exe (built into Windows) is far faster than Invoke-WebRequest; download to a temp
+# name so an interrupted run never leaves a truncated zip behind
+$zip = "$lab\$name.zip"
+if (-not (Test-Path $zip)) {
+  curl.exe -fsSL -o "$zip.part" "https://artifacts.elastic.co/downloads/beats/elastic-agent/$name.zip"
+  if ($LASTEXITCODE -ne 0) { throw "download failed ($LASTEXITCODE)" }
+  Move-Item "$zip.part" $zip -Force
+}
+Expand-Archive $zip $lab -Force
 
 & "$lab\$name\elastic-agent.exe" install --non-interactive `
   --url=$fleet --enrollment-token=$token --certificate-authorities="$lab\ca.crt"
