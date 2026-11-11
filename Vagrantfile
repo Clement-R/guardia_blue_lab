@@ -59,11 +59,11 @@ Vagrant.configure("2") do |config|
     end
 
     %w[ca.crt enrollment-token stack-version fleet-url].each do |f|
-      m.vm.provision "file", source: ".lab/#{f}", destination: "C:/lab/#{f}"
+      m.vm.provision "bundle-#{f}", type: "file", source: ".lab/#{f}", destination: "C:/lab/#{f}"
     end
-    m.vm.provision "shell", path: "provision/win-dc.ps1", args: ["-Ip", "#{NET}.20", "-Gateway", "#{NET}.1"], reboot: true
-    m.vm.provision "shell", path: "provision/win-dc-post.ps1", args: ["-Ip", "#{NET}.20", "-Forwarder", "#{NET}.1"]
-    m.vm.provision "shell", path: "provision/win-telemetry.ps1"
-    m.vm.provision "shell", path: "provision/win-agent.ps1"
+    m.vm.provision "dc", type: "shell", path: "provision/win-dc.ps1", args: ["-Ip", "#{NET}.20", "-Gateway", "#{NET}.1"], reboot: true
+    m.vm.provision "dc-post", type: "shell", path: "provision/win-dc-post.ps1", args: ["-Ip", "#{NET}.20", "-Forwarder", "#{NET}.1"]
+    m.vm.provision "telemetry", type: "shell", path: "provision/win-telemetry.ps1"
+    m.vm.provision "agent", type: "shell", path: "provision/win-agent.ps1"
   end
 end
