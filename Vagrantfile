@@ -45,6 +45,12 @@ Vagrant.configure("2") do |config|
     m.vm.hostname = "dc01"
     m.vm.guest = :windows
     m.vm.communicator = "winrm"
+    # After promotion "vagrant" is the domain account LAB\vagrant; the default Negotiate
+    # login stalls. Basic auth over HTTP on the host-only management network (lab shortcut).
+    m.winrm.transport = :plaintext
+    m.winrm.basic_auth_only = true
+    m.winrm.username = "vagrant"
+    m.winrm.password = "vagrant"
     m.vm.boot_timeout = 900
     # Static IP is set by win-dc.ps1, which finds this NIC by its fixed MAC
     m.vm.network "private_network", ip: "#{NET}.20", libvirt__network_name: "detlab",
