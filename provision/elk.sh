@@ -97,6 +97,35 @@ if ! kb "$KB/api/fleet/agent_policies/windows-endpoint" >/dev/null 2>&1; then
     || echo "WARN: could not add the Windows integration; add it once in Kibana (Fleet > Agent policies)" >&2
 fi
 
+# --- Elastic Defend on the Windows policy: Complete EDR preset, malware in Detect mode,
+#     not registered as the Windows antivirus (Microsoft Defender stays active) ---
+defend_id=$(kb "$KB/api/fleet/package_policies?perPage=100&kuery=ingest-package-policies.package.name:endpoint" \
+  | jq -r '[.items[] | select(.policy_ids | index("windows-endpoint"))][0].id // empty')
+if [ -z "$defend_id" ]; then
+  ver=$(kb "$KB/api/fleet/epm/packages/endpoint" | jq -r '.item.version // .response.version')
+  # Step 1: create with the preset; Fleet generates the full default configuration
+  defend_id=$(kb -X POST "$KB/api/fleet/package_policies" -d "{
+    \"name\":\"defend-windows\",\"namespace\":\"default\",\"policy_ids\":[\"windows-endpoint\"],
+    \"package\":{\"name\":\"endpoint\",\"version\":\"${ver}\"},
+    \"inputs\":[{\"type\":\"endpoint\",\"enabled\":true,\"streams\":[],\"config\":{
+      \"integration_config\":{\"value\":{\"type\":\"endpoint\",\"endpointConfig\":{\"preset\":\"EDRComplete\"}}}}}]
+  }" | jq -r '.item.id')
+fi
+# Step 2 (every run): enforce the lab settings on the generated configuration
+kb "$KB/api/fleet/package_policies/${defend_id}" | jq '.item | {
+    name, description, namespace, policy_ids, enabled, package,
+    inputs: [ .inputs[0] | {type, enabled, streams,
+      config: (.config
+        | .policy.value.windows.malware.mode = "detect"
+        | .policy.value.windows.antivirus_registration.enabled = false
+        | .policy.value.windows.antivirus_registration.mode = "disabled")} ]
+  }' > /tmp/defend.json
+kb -X PUT "$KB/api/fleet/package_policies/${defend_id}" -d @/tmp/defend.json >/dev/null \
+  || echo "WARN: could not apply the Elastic Defend settings; check them in Kibana (Fleet > Windows endpoint)" >&2
+rm -f /tmp/defend.json
+kb "$KB/api/fleet/package_policies/${defend_id}" | jq -c '.item.inputs[0].config.policy.value.windows
+  | {malware: .malware.mode, antivirus_registration: .antivirus_registration}'
+
 # Bundle for the Windows provisioners, copied to .lab/ on the host by a Vagrant trigger
 mkdir -p /opt/elk/windows
 cp "$CA" /opt/elk/windows/ca.crt
