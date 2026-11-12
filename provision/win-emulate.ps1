@@ -21,18 +21,31 @@ $tests = Import-Csv $planPath
 $out = "C:\AtomicRedTeam\results\$RunId"
 New-Item $out -ItemType Directory -Force | Out-Null
 
-# Resolve: for any row missing a TestGuid, find it by matching the Name against the installed atomics.
-# Atomics test numbers drift between releases, so the plan is keyed by GUID; this fills blanks and flags bad ones.
+# Resolve GUIDs from the atomics YAML (authoritative), filtered to Windows tests. Atomics test
+# numbers drift between releases, so the plan is keyed by GUID; this validates them and fills blanks.
+function Get-WinAtomics($tech) {
+  $yf = Join-Path $Atomics "$tech\$tech.yaml"
+  if (-not (Test-Path $yf)) { return @() }
+  try { $doc = ConvertFrom-Yaml (Get-Content $yf -Raw) } catch { return @() }
+  @($doc.atomic_tests | Where-Object { $_.supported_platforms -contains 'windows' })
+}
 foreach ($t in $tests) {
-  $avail = Invoke-AtomicTest $t.Technique -ShowDetailsBrief -PathToAtomicsFolder $Atomics 2>$null
-  if (-not $t.TestGuid) {
-    $m = $avail | Where-Object { $_ -like "*$($t.NameHint)*" } | Select-Object -First 1
-    if ($m -and $m -match '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})') { $t.TestGuid = $Matches[1] }
+  $wa = Get-WinAtomics $t.Technique
+  if (-not $t.TestGuid -and $t.NameHint) {
+    $m = $wa | Where-Object { $_.name -like "*$($t.NameHint)*" } | Select-Object -First 1
+    if ($m) { $t.TestGuid = $m.auto_generated_guid }
   }
-  $t | Add-Member Resolved ([bool]($avail -match [regex]::Escape($t.TestGuid))) -Force
+  $t | Add-Member Resolved ([bool](@($wa.auto_generated_guid) -contains $t.TestGuid)) -Force
 }
 $tests | Select-Object Order, Technique, Tactic, TestGuid, Resolved, Name | Format-Table -Auto | Out-String | Tee-Object "$out\plan-resolved.txt"
-if ($tests | Where-Object { -not $_.Resolved }) { Write-Warning "Some tests did not resolve on this atomics version (see above)." }
+$unres = $tests | Where-Object { -not $_.Resolved }
+if ($unres) {
+  Write-Warning "Unresolved tests. Available Windows atomics for each (pick a GUID):"
+  foreach ($u in $unres) {
+    "`n== $($u.Order) $($u.Technique) ($($u.Name)) ==" | Tee-Object "$out\plan-resolved.txt" -Append
+    Get-WinAtomics $u.Technique | ForEach-Object { "  {0}  {1}" -f $_.auto_generated_guid, $_.name } | Tee-Object "$out\plan-resolved.txt" -Append
+  }
+}
 if ($Resolve) { exit 0 }
 
 if ($GetPrereqs) {
