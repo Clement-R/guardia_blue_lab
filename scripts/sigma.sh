@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SigmaHQ rules -> Elastic EQL detection rules, with a pinned pySigma toolchain.
-# Run on the siem VM:  sudo bash /vagrant/scripts/sigma.sh <setup|convert|coverage>
+# Run on the siem VM:  sudo bash /vagrant/scripts/sigma.sh <setup|convert|coverage|verify>
 #   setup     install the pinned toolchain in a venv and download the latest SigmaHQ Core+ release
 #   convert   convert the Windows rules to Kibana rule objects (NDJSON), not imported yet
 #   coverage  check that every field a converted rule uses is populated in the channel it reads
@@ -92,5 +92,16 @@ for (f, c), n in missing.most_common(40):
 print(f"(per-rule detail: {S}/coverage.tsv)")
 PY
     ;;
-  *) echo "usage: $0 setup|convert|coverage" >&2; exit 1 ;;
+  verify)
+    # Evidence for each override: the target field is populated in the Sysmon channel, with a sample value
+    for f in process.parent.executable process.executable registry.data.strings file.code_signature.trusted \
+             process.parent.executable.caseless winlog.event_data.Details file.code_signature.signed; do
+      r=$(curl -s --cacert $CA -u "elastic:${ELASTIC_PASSWORD}" -H 'Content-Type: application/json' \
+        "https://localhost:9200/logs-windows.sysmon_operational-*/_search" -d "{\"size\":1,\"track_total_hits\":true,
+         \"query\":{\"bool\":{\"filter\":[{\"exists\":{\"field\":\"$f\"}}]}},\"_source\":[\"event.code\",\"$f\"]}")
+      printf '%-38s docs=%-7s sample=%s\n' "$f" "$(jq -r '.hits.total.value' <<<"$r")" \
+        "$(jq -c '.hits.hits[0]._source // {}' <<<"$r" | cut -c1-110)"
+    done
+    ;;
+  *) echo "usage: $0 setup|convert|coverage|verify" >&2; exit 1 ;;
 esac

@@ -1,0 +1,23 @@
+# Site overrides, applied after ecs_windows (priority 20), so keyed on the names it produces.
+# ecs_windows targets Winlogbeat field names; Elastic Agent's Windows/Sysmon integrations differ.
+# Each mapping must be verified against a real event before use:  sigma.sh verify
+name: Elastic Agent field overrides (guardia lab)
+priority: 50
+transformations:
+  - id: agent_caseless_subfields
+    type: field_name_mapping
+    mapping:
+      # Winlogbeat templates have a .caseless sub-field; Elastic Agent templates do not.
+      # EQL ':' comparisons are case-insensitive anyway.
+      process.parent.executable.caseless: process.parent.executable
+      process.executable.caseless: process.executable
+  - id: agent_registry_details
+    type: field_name_mapping
+    mapping:
+      # Sysmon registry value data (events 13/14): the integration stores it in ECS
+      winlog.event_data.Details: registry.data.strings
+  - id: agent_signature_status
+    type: field_name_mapping
+    mapping:
+      # Sysmon image load (event 7) "Signed"
+      file.code_signature.signed: file.code_signature.trusted
