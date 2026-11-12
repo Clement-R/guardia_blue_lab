@@ -20,7 +20,7 @@ Vagrant.configure("2") do |config|
     m.vm.provider "libvirt" do |libvirt|
       libvirt.driver = "kvm"
       libvirt.uri = 'qemu:///system'
-      libvirt.memory = 6144
+      libvirt.memory = 8192   # 3 GB Elasticsearch heap + Kibana + Fleet Server (heap peaked at 80% of 2 GB with ~2,500 rules)
       libvirt.cpus = 2
       libvirt.machine_virtual_size = 60
     end
