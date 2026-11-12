@@ -4,11 +4,26 @@
 #   setup     install the pinned toolchain in a venv and download the latest SigmaHQ Core+ release
 #   convert   convert the Windows rules to Kibana rule objects (NDJSON), not imported yet
 #   coverage  check that every field a converted rule uses is populated in the channel it reads
+#   verify    evidence for each site override (target field populated, sample value)
+#   deploy    import all converted rules disabled; enable <sev> enables one severity at a time
+#   status / disable-failing   triage after one rule cycle
 set -euo pipefail
 S=/opt/sigma
 V=$S/venv
 cd /opt/elk; set -a; . ./.env; set +a
 CA=/opt/elk/certs/ca/ca.crt
+KB="https://localhost:5601"
+kb() { curl -sS --fail-with-body --cacert $CA -u "elastic:${ELASTIC_PASSWORD}" -H 'kbn-xsrf: true' \
+         -H 'elastic-api-version: 2023-10-31' "$@"; }
+es() { curl -sS --fail-with-body --cacert $CA -u "elastic:${ELASTIC_PASSWORD}" "$@"; }
+TAG="sigma-deploy"
+# Windows data streams the Sigma rules read (Sysmon, Security/System/Application, PowerShell, extra channels)
+INDEX='["logs-windows.*","logs-system.*","logs-winlog.*"]'
+health() {
+  es "https://localhost:9200/_nodes/stats/jvm,breaker" | jq -r '.nodes[] |
+    "heap \(.jvm.mem.heap_used_percent)%, memory-limit trips \([.breakers[].tripped] | add)"'
+  echo "enabled sigma rules: $(kb "$KB/api/detection_engine/rules/_find?per_page=1&filter=alert.attributes.tags:%22$TAG%22%20AND%20alert.attributes.enabled:true" | jq .total)"
+}
 
 # Same pins as the reference build: newer sigma-cli needs pySigma 2.x, which this backend does not support
 PINS="sigma-cli==3.1.0 pySigma==1.5.1 pySigma-backend-elasticsearch==2.1.1 pySigma-pipeline-sysmon==2.0.0 pySigma-pipeline-windows==2.0.1"
@@ -103,5 +118,54 @@ PY
         "$(jq -c '.hits.hits[0]._source // {}' <<<"$r" | cut -c1-110)"
     done
     ;;
-  *) echo "usage: $0 setup|convert|coverage|verify" >&2; exit 1 ;;
+  deploy)
+    # Import every converted rule DISABLED, tagged, every 10 min with a 13 min lookback.
+    # Queries over 20,000 characters are dropped (Kibana limit); the saved-object id is dropped
+    # (must be a UUID), the Sigma rule_id is kept so re-imports overwrite instead of duplicating.
+    mkdir -p $S/import && rm -f $S/import/*
+    jq -c --argjson idx "$INDEX" --arg tag "$TAG" '
+      select((.query | length) <= 20000) | del(.id)
+      | .enabled = false | .interval = "10m" | .from = "now-13m" | .index = $idx
+      | .tags = ((.tags // []) + [$tag] | unique)' $S/converted.ndjson > $S/import/all.ndjson
+    echo "to import: $(wc -l < $S/import/all.ndjson) (dropped for size: $(( $(wc -l < $S/converted.ndjson) - $(wc -l < $S/import/all.ndjson) )))"
+    split -l 400 -d --additional-suffix=.ndjson $S/import/all.ndjson $S/import/batch-
+    for b in $S/import/batch-*.ndjson; do
+      kb -X POST "$KB/api/detection_engine/rules/_import?overwrite=true" -F "file=@$b" \
+        | jq -c --arg b "$(basename $b)" '{batch:$b, success_count, errors: ([.errors[]?.error.message] | unique | .[0:3])}'
+    done
+    health
+    ;;
+
+  enable)
+    # Enable one severity at a time, checking memory and scheduler load between steps:
+    #   sigma.sh enable critical ; sigma.sh enable high ; sigma.sh enable medium ; sigma.sh enable low
+    sev="${2:?severity: critical|high|medium|low}"
+    kb -X POST "$KB/api/detection_engine/rules/_bulk_action" -H 'Content-Type: application/json' \
+      -d "$(jq -n --arg q "alert.attributes.tags:\"$TAG\" AND alert.attributes.params.severity:\"$sev\"" '{action:"enable", query:$q}')" \
+      | jq -c '.attributes.summary'
+    health
+    ;;
+
+  status)
+    # After at least one full cycle (10 min): last result of every enabled Sigma rule, failures with message
+    kb "$KB/api/detection_engine/rules/_find?per_page=10000&filter=alert.attributes.tags:%22$TAG%22%20AND%20alert.attributes.enabled:true" \
+      | jq -r '.data[] | [(.execution_summary.last_execution.status // "not run yet"), .severity, .name,
+               (.execution_summary.last_execution.message // "" | gsub("[\n\t]";" ") | .[0:200])] | @tsv' \
+      | sort > $S/sigma-rules-status.tsv
+    cut -f1 $S/sigma-rules-status.tsv | sort | uniq -c
+    echo "--- failure messages, grouped (count, first 90 chars):"
+    grep -v '^succeeded' $S/sigma-rules-status.tsv | cut -f4 | cut -c1-90 | sort | uniq -c | sort -rn | head -25
+    echo "(full list: $S/sigma-rules-status.tsv)"
+    health
+    ;;
+
+  disable-failing)
+    ids=$(kb "$KB/api/detection_engine/rules/_find?per_page=10000&filter=alert.attributes.tags:%22$TAG%22%20AND%20alert.attributes.enabled:true" \
+      | jq -c '[.data[] | select(.execution_summary.last_execution.status == "failed") | .id]')
+    [ "$ids" = "[]" ] && { echo "no failing Sigma rules"; exit 0; }
+    kb -X POST "$KB/api/detection_engine/rules/_bulk_action" -H 'Content-Type: application/json' \
+      -d "$(jq -n --argjson ids "$ids" '{action:"disable", ids:$ids}')" | jq -c '.attributes.summary'
+    ;;
+
+  *) echo "usage: $0 setup|convert|coverage|verify|deploy|enable <sev>|status|disable-failing" >&2; exit 1 ;;
 esac
