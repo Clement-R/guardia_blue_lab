@@ -81,11 +81,23 @@ New-Item C:\PowerShellTranscripts -ItemType Directory -Force | Out-Null
 # --- 4. Log sizes and extra channels ---
 wevtutil sl Security /ms:268435456
 wevtutil sl "Microsoft-Windows-PowerShell/Operational" /ms:67108864
-foreach ($c in @("Microsoft-Windows-TaskScheduler/Operational",
-                 "Microsoft-Windows-Bits-Client/Operational",
-                 "Microsoft-Windows-CodeIntegrity/Operational",
-                 "Microsoft-Windows-WMI-Activity/Operational")) {
-  wevtutil sl $c /e:true /ms:33554432
+$extraChannels = @(
+  "Microsoft-Windows-TaskScheduler/Operational",
+  "Microsoft-Windows-Bits-Client/Operational",
+  "Microsoft-Windows-CodeIntegrity/Operational",
+  "Microsoft-Windows-WMI-Activity/Operational",
+  "Microsoft-Windows-WinRM/Operational",
+  "Microsoft-Windows-TerminalServices-LocalSessionManager/Operational",
+  "Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational",
+  "Microsoft-Windows-RemoteDesktopServices-RdpCoreTS/Operational",
+  "Microsoft-Windows-Windows Firewall With Advanced Security/Firewall",
+  "Microsoft-Windows-Kernel-PnP/Configuration",
+  "Microsoft-Windows-DNSServer/Audit",
+  "Microsoft-Windows-GroupPolicy/Operational"
+)
+foreach ($c in $extraChannels) {
+  cmd /c "wevtutil sl `"$c`" /e:true /ms:33554432" 2>$null
+  if ($LASTEXITCODE -ne 0) { Write-Warning "channel not enabled (may be absent on this host): $c" }
 }
 
 # --- 5. Sysmon with the sysmon-modular default configuration ---

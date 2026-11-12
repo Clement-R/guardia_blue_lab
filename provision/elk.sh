@@ -120,6 +120,14 @@ winlog.taskscheduler|Microsoft-Windows-TaskScheduler/Operational
 winlog.bits_client|Microsoft-Windows-Bits-Client/Operational
 winlog.codeintegrity|Microsoft-Windows-CodeIntegrity/Operational
 winlog.wmi_activity|Microsoft-Windows-WMI-Activity/Operational
+winlog.winrm|Microsoft-Windows-WinRM/Operational
+winlog.rdp_lsm|Microsoft-Windows-TerminalServices-LocalSessionManager/Operational
+winlog.rdp_rcm|Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational
+winlog.rdp_corets|Microsoft-Windows-RemoteDesktopServices-RdpCoreTS/Operational
+winlog.firewall|Microsoft-Windows-Windows Firewall With Advanced Security/Firewall
+winlog.kernel_pnp|Microsoft-Windows-Kernel-PnP/Configuration
+winlog.dns_server|Microsoft-Windows-DNSServer/Audit
+winlog.grouppolicy|Microsoft-Windows-GroupPolicy/Operational
 EOF
 
 # --- Osquery Manager on the Windows policy: live and scheduled queries from Kibana,
