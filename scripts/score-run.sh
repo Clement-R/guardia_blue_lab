@@ -16,7 +16,11 @@ es() { curl -sS --fail-with-body --cacert $CA -u "elastic:${ELASTIC_PASSWORD}" -
 # Parse "N start (UTC): <iso>  <tech> <name>" lines from the markers file into: start<TAB>tech<TAB>name
 python3 - "$MARKERS" "$T1" > /tmp/windows.tsv <<'PY'
 import sys, re
-lines=open(sys.argv[1]).read().splitlines(); T1=sys.argv[2]
+raw=open(sys.argv[1],'rb').read()
+if raw[:2] in (b'\xff\xfe', b'\xfe\xff'): text=raw.decode('utf-16')
+elif raw[:3]==b'\xef\xbb\xbf': text=raw.decode('utf-8-sig')
+else: text=raw.decode('utf-8','replace')
+lines=text.splitlines(); T1=sys.argv[2]
 rows=[]
 for l in lines:
     m=re.match(r'\s*(\d+)\s+start \(UTC\):\s*(\S+)\s+(T\S+)\s+(.*)', l)
