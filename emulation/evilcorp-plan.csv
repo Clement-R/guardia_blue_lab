@@ -16,8 +16,8 @@ Order,Technique,Tactic,Phase,TestGuid,Name,NameHint,Notes
 15,T1003.001,Credential Access,LSASS dump (comsvcs),2536dee2-12fb-459a-8c37-971844fa73be,Dump LSASS.exe Memory using comsvcs.dll,,Verified; LSA protection expected to block (positive control)
 16,T1003.002,Credential Access,Registry hive dump,5c2571d0-1572-416d-9676-812e64ca9f44,Registry dump of SAM creds and secrets,,Verified in reference run
 17,T1036.003,Defense Evasion,Masquerading,c3d24a39-2bfe-4c6a-b064-90cd73896cb0,Masquerading - windows exe running as different windows exe,,Verified in reference run
-18,T1070.001,Defense Evasion,Clear Windows event logs,e6abb60e-26b8-41da-8aae-0c35174b0967,Clear Logs,,Evil Corp emptied log files; reference tagged this T1685.005 - reconcile ATT&CK ID
-19,T1562.001,Defense Evasion,Impair Defender,6b8df440-51ec-4d53-bf83-899591c9b5d7,Tamper with Windows Defender ATP PowerShell,,Evil Corp reverted Defender defs via MpCmdRun; reference tagged T1685 - reconcile
+18,T1685.005,Defense Evasion,Clear Windows event logs,e6abb60e-26b8-41da-8aae-0c35174b0967,Clear Logs,,Evil Corp emptied log files with Cobalt Strike; ATT&CK v19 T1685.005
+19,T1685,Defense Evasion,Impair Defender,6b8df440-51ec-4d53-bf83-899591c9b5d7,Tamper with Windows Defender ATP PowerShell,,Evil Corp reverted Defender definitions via MpCmdRun; ATT&CK v19 T1685
 20,T1560.001,Collection,Archive collected data,d1334303-59cb-4a03-8313-b3e24d02c198,Compress Data and lock with password for Exfiltration with 7zip,,Verified; reference F-01 gap candidate
 21,T1567.002,Exfiltration,Exfil to cloud storage,,Exfiltrate data with rclone,rclone,Evil Corp exfils with Rclone/MEGASync; resolve GUID on box; point at a lab target only
 22,T1490,Impact,Inhibit system recovery,cf21060a-80b3-4238-a595-22525de4ab81,Disable Windows Recovery Console Repair,,Verified; bcdedit variant (works on Server)
