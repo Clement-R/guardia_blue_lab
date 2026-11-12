@@ -2,15 +2,15 @@ Order,Technique,Tactic,Phase,TestGuid,Name,NameHint,Notes
 1,T1027,Defense Evasion,Execution (obfuscated loader),a50d5a97-2531-499e-a1de-5544c74432c6,Execute base64-encoded PowerShell,,Shared with run 1 for comparability
 2,T1105,Command and Control,Ingress tool transfer,dd3b61dd-7bbc-48cd-ab51-49ad1a776df0,Certutil download,,Shared with run 1
 3,T1197,Defense Evasion,BITS job transfer,,BITS Download using PowerShell,BITSAdmin,Wizard Spider used WMIC+BITSAdmin to transfer payload; resolve on box
-4,T1087.002,Discovery,Domain account discovery,,Enumerate Active Directory users/admins,net group,net group Domain Admins /domain + Get-ADComputer; resolve on box
+4,T1087.002,Discovery,Domain account discovery,6fbc9e68-5ad7-444a-bd11-8bf3136c477e,Enumerate Active Directory users/admins,net group,net group Domain Admins /domain + Get-ADComputer; resolve on box
 5,T1018,Discovery,Remote system / DC discovery,,Remote System Discovery nltest/AdFind,nltest,nltest /dclist and AdFind domain enumeration; resolve on box
-6,T1482,Discovery,Domain trust discovery,,Domain Trust Discovery nltest,domain_trusts,nltest /domain_trusts; resolve on box
+6,T1482,Discovery,Domain trust discovery,2e22641d-0498-48d2-b9ff-c71e496ccdbe,Domain Trust Discovery nltest,domain_trusts,nltest /domain_trusts; resolve on box
 7,T1069.002,Discovery,Domain group discovery,,Permission Groups Discovery (Domain),Domain,net group /domain; resolve on box
 8,T1016,Discovery,Network discovery,970ab6a1-0157-4f3f-9a73-ec4166754b23,System Network Configuration Discovery,,Shared with run 1
 9,T1558.003,Credential Access,Kerberoasting,,Kerberoasting (Rubeus/Invoke-Kerberoast),Rubeus,Signature AD technique; DC emits 4769; resolve GUID on box (PowerSploit/Rubeus variant)
 10,T1003.001,Credential Access,LSASS dump,2536dee2-12fb-459a-8c37-971844fa73be,Dump LSASS.exe Memory using comsvcs.dll,,Shared; LSA protection expected to block
 11,T1003.003,Credential Access,NTDS.dit dump,,Create Volume Shadow Copy / ntdsutil NTDS,ntdsutil,DC credential theft via ntdsutil ifm; resolve on box
-12,T1136.001,Persistence,Create local account,,Create a new user in a command prompt,Create a new local user,Wizard Spider created local admin accounts; resolve on box
+12,T1136.001,Persistence,Create local account,fda74566-a604-4581-a4cc-fbbe21d66559,Create a new user in a command prompt,Create a new local user,Wizard Spider created local admin accounts; resolve on box
 13,T1053.005,Persistence,Scheduled task,42f53695-ad4a-4546-abb6-7d837f644a71,Scheduled task (Local),,Shared with run 1
 14,T1055.001,Defense Evasion,DLL injection,,Process Injection via mavinject.exe,mavinject,Wizard Spider injected DLLs into memory; resolve on box
 15,T1560.001,Collection,Archive collected data,d1334303-59cb-4a03-8313-b3e24d02c198,Compress Data and lock with password for Exfiltration with 7zip,,Shared; gap candidate
