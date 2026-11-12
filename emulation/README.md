@@ -36,15 +36,15 @@ On the host:
 2. `vagrant winrm dc -c 'w32tm /resync /force; w32tm /stripchart /computer:pool.ntp.org /samples:2 /dataonly'` — proceed only if offset < 1 s
 3. `vagrant ssh siem -c 'sudo bash /vagrant/scripts/health.sh 3 10'` — confirm no late rules / no breaker trips before starting
 4. Run the plan over SSH to the DC (session 0: sshd -> cmd -> powershell), e.g.:
-   `ssh Administrator@10.77.77.20 'pwsh C:\AtomicRedTeam\win-emulate.ps1 -Plan evilcorp -RunId run-ec-1'`
+   `ssh Administrator@10.77.77.20 'powershell -ExecutionPolicy Bypass -File C:\AtomicRedTeam\win-emulate.ps1 -Plan evilcorp -RunId run-ec-1'`
 5. Note T0/T1 from `C:\AtomicRedTeam\results\<RunId>\<RunId>-markers.txt`; copy the results folder off the VM
 6. Wait T1 + 15 min (beyond the Sigma 13-min lookback), then score:
    `vagrant ssh siem -c 'sudo bash /vagrant/scripts/score-run.sh C:\AtomicRedTeam\results\<RunId>\<RunId>-execlog.csv <T0> <T1>'`
 
 Preparation (once): install atomics and fetch prerequisites, then snapshot:
    `vagrant provision dc --provision-with art`
-   `ssh Administrator@10.77.77.20 'pwsh C:\AtomicRedTeam\win-emulate.ps1 -Plan evilcorp -RunId prep -GetPrereqs'`
-   `ssh Administrator@10.77.77.20 'pwsh C:\AtomicRedTeam\win-emulate.ps1 -Plan wizardspider -RunId prep -GetPrereqs'`
+   `ssh Administrator@10.77.77.20 'powershell -ExecutionPolicy Bypass -File C:\AtomicRedTeam\win-emulate.ps1 -Plan evilcorp -RunId prep -GetPrereqs'`
+   `ssh Administrator@10.77.77.20 'powershell -ExecutionPolicy Bypass -File C:\AtomicRedTeam\win-emulate.ps1 -Plan wizardspider -RunId prep -GetPrereqs'`
    `vagrant snapshot save dc art-primed`
 
 ## Defender decision
