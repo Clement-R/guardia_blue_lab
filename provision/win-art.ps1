@@ -15,6 +15,9 @@ if (-not (Test-Path "$root\invoke-atomicredteam\Invoke-AtomicRedTeam.psd1")) {
   # PowerShell Gallery prerequisites (powershell-yaml is pulled by the installer)
   Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
   Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+  # powershell-yaml is a required module of Invoke-AtomicRedTeam; install it AllUsers so any
+  # account (e.g. Administrator over SSH during runs) can load the module, not just the installer.
+  Install-Module powershell-yaml -Scope AllUsers -Force
   Invoke-Expression (Invoke-WebRequest "https://raw.githubusercontent.com/redcanaryco/invoke-atomicredteam/master/install-atomicredteam.ps1" -UseBasicParsing).Content
   Install-AtomicRedTeam -getAtomics -InstallPath $root -Force
 }
