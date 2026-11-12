@@ -74,5 +74,9 @@ Vagrant.configure("2") do |config|
     # Run explicitly, after the "clean" snapshot: vagrant provision dc --provision-with art
     m.vm.provision "art", type: "shell", path: "provision/win-art.ps1", run: "never"
     m.vm.provision "yara", type: "shell", path: "provision/win-yara.ps1"
+    # Emulation harness + plans (copied to the DC; runs are launched manually over SSH, see emulation/README.md)
+    m.vm.provision "emu-harness", type: "file", source: File.join(__dir__, "provision", "win-emulate.ps1"), destination: "C:/AtomicRedTeam/win-emulate.ps1"
+    m.vm.provision "emu-plan-ec", type: "file", source: File.join(__dir__, "emulation", "evilcorp-plan.csv"), destination: "C:/AtomicRedTeam/plans/evilcorp.csv"
+    m.vm.provision "emu-plan-ws", type: "file", source: File.join(__dir__, "emulation", "wizardspider-plan.csv"), destination: "C:/AtomicRedTeam/plans/wizardspider.csv"
   end
 end

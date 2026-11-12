@@ -1,0 +1,23 @@
+Order,Technique,Tactic,Phase,TestGuid,Name,NameHint,Notes
+1,T1027,Defense Evasion,Execution (obfuscated loader),a50d5a97-2531-499e-a1de-5544c74432c6,Execute base64-encoded PowerShell,,Verified in reference run
+2,T1105,Command and Control,Ingress tool transfer (loader),dd3b61dd-7bbc-48cd-ab51-49ad1a776df0,Certutil download (urlcache),,Verified in reference run
+3,T1127.001,Defense Evasion,Execution via trusted binary (MSBuild),,MSBuild Bypass Using Inline Tasks,MSBuild,Evil Corp ran Cobalt Strike beacon via MsBuild.exe; resolve GUID on box
+4,T1218.011,Defense Evasion,Signed binary proxy execution,638730e7-7aed-43dc-bf8c-8117f805f5bb,Rundll32 execute VBScript command,,Verified in reference run
+5,T1047,Execution,WMI execution,10447c83-fc38-462a-a936-5102363b1c43,Create a Process using obfuscated Win32_Process,,Verified in reference run
+6,T1071.001,Command and Control,C2 over HTTP,81c13829-f6c9-45b8-85a6-053366d55297,Malicious User Agents - PowerShell,,Verified in reference run
+7,T1082,Discovery,Host discovery,66703791-c902-4560-8770-42b8a91f7667,System Information Discovery,,Verified in reference run
+8,T1016,Discovery,Network discovery,970ab6a1-0157-4f3f-9a73-ec4166754b23,System Network Configuration Discovery,,Verified in reference run
+9,T1057,Discovery,Process discovery,c5806a4f-62b8-4900-980b-c7ec004e9908,Process Discovery - tasklist,,Verified in reference run
+10,T1087.001,Discovery,Local account discovery,80887bec-5a9b-4efc-a81d-f83eb2eb32ab,Enumerate all accounts (Local),,Verified in reference run
+11,T1069.001,Discovery,Local group discovery,1f454dd6-e134-44df-bebb-67de70fb6cd8,Permission Groups Discovery (Local),,Verified in reference run
+12,T1547.001,Persistence,Run key persistence,e55be3fd-3521-4610-9d1a-e210e42dcf05,Reg Key Run,,Verified in reference run
+13,T1053.005,Persistence,Scheduled task,42f53695-ad4a-4546-abb6-7d837f644a71,Scheduled task (Local),,Verified in reference run
+14,T1543.003,Persistence,Service installation,981e2942-e433-44e9-afc1-8c957a1496b6,Service Installation CMD,,Verified in reference run
+15,T1003.001,Credential Access,LSASS dump (comsvcs),2536dee2-12fb-459a-8c37-971844fa73be,Dump LSASS.exe Memory using comsvcs.dll,,Verified; LSA protection expected to block (positive control)
+16,T1003.002,Credential Access,Registry hive dump,5c2571d0-1572-416d-9676-812e64ca9f44,Registry dump of SAM creds and secrets,,Verified in reference run
+17,T1036.003,Defense Evasion,Masquerading,c3d24a39-2bfe-4c6a-b064-90cd73896cb0,Masquerading - windows exe running as different windows exe,,Verified in reference run
+18,T1070.001,Defense Evasion,Clear Windows event logs,e6abb60e-26b8-41da-8aae-0c35174b0967,Clear Logs,,Evil Corp emptied log files; reference tagged this T1685.005 - reconcile ATT&CK ID
+19,T1562.001,Defense Evasion,Impair Defender,6b8df440-51ec-4d53-bf83-899591c9b5d7,Tamper with Windows Defender ATP PowerShell,,Evil Corp reverted Defender defs via MpCmdRun; reference tagged T1685 - reconcile
+20,T1560.001,Collection,Archive collected data,d1334303-59cb-4a03-8313-b3e24d02c198,Compress Data and lock with password for Exfiltration with 7zip,,Verified; reference F-01 gap candidate
+21,T1567.002,Exfiltration,Exfil to cloud storage,,Exfiltrate data with rclone,rclone,Evil Corp exfils with Rclone/MEGASync; resolve GUID on box; point at a lab target only
+22,T1490,Impact,Inhibit system recovery,cf21060a-80b3-4238-a595-22525de4ab81,Disable Windows Recovery Console Repair,,Verified; bcdedit variant (works on Server)
