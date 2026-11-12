@@ -14,6 +14,10 @@ Expand-Archive $tmp "$dir\core-$Release" -Force
 Copy-Item "$dir\core-$Release\packages\core\yara-rules-core.yar" $rules -Force
 Remove-Item $tmp, "$dir\core-$Release" -Recurse -Force
 
+# Known-positive test rule: osquery's yara table has no "sigrule" column, so tests use a file.
+# It matches ruleset.json (written below), which proves that scanning with a rule file works.
+Set-Content "$dir\lab-test.yar" 'rule lab_test { strings: $a = "YARA Forge" condition: $a }'
+
 # Only SYSTEM and Administrators: osquery runs as SYSTEM; rules should not be user-writable
 icacls $dir /inheritance:r /grant:r "SYSTEM:(OI)(CI)F" "BUILTIN\Administrators:(OI)(CI)F" | Out-Null
 
