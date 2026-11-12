@@ -37,7 +37,9 @@ On the host:
 3. `vagrant ssh siem -c 'sudo bash /vagrant/scripts/health.sh 3 10'` — confirm no late rules / no breaker trips before starting
 4. Run the plan over SSH to the DC (session 0: sshd -> cmd -> powershell), e.g.:
    `ssh Administrator@10.77.77.20 'powershell -NoProfile -ExecutionPolicy Bypass -File C:\AtomicRedTeam\win-emulate.ps1 -Plan evilcorp -RunId run-ec-1'`
-5. Note T0/T1 from `C:\AtomicRedTeam\results\<RunId>\<RunId>-markers.txt`; copy the results folder off the VM
+5. Note T0/T1 from `C:\AtomicRedTeam\results\<RunId>\<RunId>-markers.txt`, then pull the evidence
+   off the DC: `scripts/pull-evidence.sh <RunId>` (scp over SSH -> `evidence/<RunId>/`). Do this
+   **before** restoring the snapshot — the results live only on the VM.
 6. Wait T1 + 15 min (beyond the Sigma 13-min lookback), then score:
    `vagrant ssh siem -c 'sudo bash /vagrant/scripts/score-run.sh C:\AtomicRedTeam\results\<RunId>\<RunId>-execlog.csv <T0> <T1>'`
 
