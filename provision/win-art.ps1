@@ -23,7 +23,7 @@ if (-not (Test-Path "$root\invoke-atomicredteam\Invoke-AtomicRedTeam.psd1")) {
 }
 
 # Load the module for every PowerShell session (used over WinRM and SSH)
-$profileLine = "Import-Module '$root\invoke-atomicredteam\Invoke-AtomicRedTeam.psd1' -Force; `$PSDefaultParameterValues = @{'Invoke-AtomicTest:PathToAtomicsFolder'='$root\atomics'}"
+$profileLine = "try { Import-Module '$root\invoke-atomicredteam\Invoke-AtomicRedTeam.psd1' -Force -ErrorAction Stop } catch {}; `$PSDefaultParameterValues = @{'Invoke-AtomicTest:PathToAtomicsFolder'='$root\atomics'}"
 $allUsers = $PROFILE.AllUsersAllHosts
 New-Item (Split-Path $allUsers) -ItemType Directory -Force | Out-Null
 if (-not (Test-Path $allUsers) -or -not (Select-String -Path $allUsers -SimpleMatch $root -Quiet)) {

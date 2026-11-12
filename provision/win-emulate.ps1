@@ -1,7 +1,7 @@
 # Adversary-emulation run harness. Runs an Atomic Red Team plan (CSV) in sequence,
 # records T0/T1 and a per-test execution log, and pauses between tests so alerts can be
 # attributed to a test by time window. Run over SSH from the siem VM (see emulation/README.md):
-#   powershell -ExecutionPolicy Bypass -File C:\AtomicRedTeam\win-emulate.ps1 -Plan evilcorp -RunId run-ec-1 [-GetPrereqs] [-Resolve]
+#   powershell -NoProfile -ExecutionPolicy Bypass -File C:\AtomicRedTeam\win-emulate.ps1 -Plan evilcorp -RunId run-ec-1 [-GetPrereqs] [-Resolve]
 #
 # This does NOT take snapshots or resync the clock: do that from the host before/after
 # (see emulation/README.md), so the harness stays a pure, repeatable executor.
