@@ -126,7 +126,58 @@ PY
     jq -c --argjson idx "$INDEX" --arg tag "$TAG" '
       select((.query | length) <= 20000) | del(.id)
       | .enabled = false | .interval = "10m" | .from = "now-13m" | .index = $idx
-      | .tags = ((.tags // []) + [$tag] | unique)' $S/converted.ndjson > $S/import/all.ndjson
+      | .tags = ((.tags // []) + [$tag] | unique)' $S/converted.ndjson > $S/import/stage.ndjson
+    # The backend writes string operators (:, like~) for numeric, boolean and IP fields, which EQL
+    # rejects. Rewrite only literal comparisons without wildcards to == / in, tag those rules.
+    ELASTIC_PASSWORD="$ELASTIC_PASSWORD" $V/bin/python - "$S" "$CA" <<'PY'
+import json, re, sys, ssl, base64, os, urllib.request
+S, CA = sys.argv[1], sys.argv[2]
+ctx = ssl.create_default_context(cafile=CA)
+auth = "Basic " + base64.b64encode(f"elastic:{os.environ['ELASTIC_PASSWORD']}".encode()).decode()
+req = urllib.request.Request("https://localhost:9200/logs-windows.*,logs-system.*,logs-winlog.*/_field_caps?fields=*",
+                             headers={"Authorization": auth})
+caps = json.load(urllib.request.urlopen(req, context=ctx))["fields"]
+NUM = {"long", "integer", "short", "byte", "unsigned_long", "double", "float"}
+kind = {}
+for f, types in caps.items():
+    t = set(types)
+    if t <= NUM: kind[f] = "num"
+    elif t == {"boolean"}: kind[f] = "bool"
+    elif t == {"ip"}: kind[f] = "ip"
+def lit(v, k):
+    v = v.strip().strip('"')
+    if "*" in v or "?" in v: return None
+    if k == "ip": return f'"{v}"'
+    if k == "bool": return v.lower() if v.lower() in ("true", "false") else None
+    return v if re.fullmatch(r"-?\d+(\.\d+)?", v) else None
+def rewrite(q):
+    changed = False
+    for f, k in kind.items():
+        if f not in q: continue
+        F = re.escape(f)
+        def many(m):
+            nonlocal changed
+            vals = [lit(x, k) for x in m.group(1).split(",")]
+            if None in vals: return m.group(0)
+            changed = True; return f"{f} in ({', '.join(vals)})"
+        q = re.sub(rf"(?<![\w.]){F}\s*(?::|like~)\s*\(([^()]*)\)", many, q)
+        def one(m):
+            nonlocal changed
+            v = lit(m.group(1), k)
+            if v is None: return m.group(0)
+            changed = True; return f"{f} == {v}"
+        q = re.sub(rf'(?<![\w.]){F}\s*(?::|like~)\s*("[^"]*"|[\w.:-]+)', one, q)
+    return q, changed
+n = 0
+with open(f"{S}/import/all.ndjson", "w") as out:
+    for line in open(f"{S}/import/stage.ndjson"):
+        r = json.loads(line)
+        r["query"], ch = rewrite(r["query"])
+        if ch:
+            n += 1; r["tags"] = sorted(set(r["tags"]) | {"sigma-rewritten"})
+        out.write(json.dumps(r) + "\n")
+print(f"rules with retyped comparisons (tagged sigma-rewritten): {n}")
+PY
     echo "to import: $(wc -l < $S/import/all.ndjson) (dropped for size: $(( $(wc -l < $S/converted.ndjson) - $(wc -l < $S/import/all.ndjson) )))"
     split -l 400 -d --additional-suffix=.ndjson $S/import/all.ndjson $S/import/batch-
     for b in $S/import/batch-*.ndjson; do
@@ -180,12 +231,37 @@ PY
     ;;
 
   disable-failing)
-    ids=$(kb "$KB/api/detection_engine/rules/_find?per_page=10000&filter=alert.attributes.tags:%22$TAG%22%20AND%20alert.attributes.enabled:true" \
-      | jq -c '[.data[] | select(.execution_summary.last_execution.status == "failed") | .id]')
+    found=$(kb "$KB/api/detection_engine/rules/_find?per_page=10000&filter=alert.attributes.tags:%22$TAG%22%20AND%20alert.attributes.enabled:true")
+    # Record what is disabled and why (Report 1 evidence), then disable
+    jq -r '.data[] | select(.execution_summary.last_execution.status == "failed")
+      | [.rule_id, .severity, .name, (.execution_summary.last_execution.message | gsub("[\n\t]";" ") | .[0:600])] | @tsv' \
+      <<<"$found" >> $S/disabled-rules.tsv
+    ids=$(jq -c '[.data[] | select(.execution_summary.last_execution.status == "failed") | .id]' <<<"$found")
+    echo "recorded in $S/disabled-rules.tsv"
     [ "$ids" = "[]" ] && { echo "no failing Sigma rules"; exit 0; }
     kb -X POST "$KB/api/detection_engine/rules/_bulk_action" -H 'Content-Type: application/json' \
       -d "$(jq -n --argjson ids "$ids" '{action:"disable", ids:$ids}')" | jq -c '.attributes.summary'
     ;;
 
-  *) echo "usage: $0 setup|convert|coverage|verify|deploy|enable <sev>|status|disable-failing" >&2; exit 1 ;;
+  fix-powershell)
+    # powershell.file.script_block_text is a text field: EQL cannot run :, like~ or regex~ on it.
+    # Add an exact-match wildcard multi-field through the integration's @custom component template
+    # (copying the field definition and its analyzer, since each component template is validated
+    # on its own), then roll the data streams over so new indices get the mapping.
+    for ds in windows.powershell_operational windows.powershell; do
+      pkg=$(es "https://localhost:9200/_component_template/logs-${ds}@package")
+      field=$(jq -c '.component_templates[0].component_template.template.mappings.properties.powershell.properties.file.properties.script_block_text // empty' <<<"$pkg")
+      [ -n "$field" ] || { echo "$ds: no script_block_text in the package template, skipped"; continue; }
+      analysis=$(jq -c '.component_templates[0].component_template.template.settings.index.analysis // .component_templates[0].component_template.template.settings.analysis // {}' <<<"$pkg")
+      body=$(jq -n --argjson f "$field" --argjson a "$analysis" '{template: {
+        settings: (if $a == {} then {} else {analysis: $a} end),
+        mappings: {properties: {powershell: {properties: {file: {properties: {
+          script_block_text: ($f + {fields: (($f.fields // {}) + {wildcard: {type: "wildcard"}})})}}}}}}}}')
+      es -X PUT "https://localhost:9200/_component_template/logs-${ds}@custom" -H 'Content-Type: application/json' -d "$body" | jq -c .
+      es -X POST "https://localhost:9200/logs-${ds}-default/_rollover" | jq -c '{rolled_over, new_index}'
+    done
+    echo "Rules recover on their next run after the rollover (wait one full cycle before judging)."
+    ;;
+
+  *) echo "usage: $0 setup|convert|coverage|verify|deploy|enable <sev>|status|fix-powershell|disable-failing" >&2; exit 1 ;;
 esac
