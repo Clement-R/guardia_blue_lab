@@ -1,0 +1,88 @@
+{
+  "name": "lab-persistence-and-tooling",
+  "description": "Persistence, defence impairment and YARA checks for dc01. Adapted from palantir/osquery-configuration (commit 89c2ae5, 2020) and the official osquery windows-attacks pack.",
+  "enabled": true,
+  "policy_ids": [
+    "windows-endpoint"
+  ],
+  "queries": {
+    "startup_items": {
+      "query": "SELECT name, path, args, source, status, username FROM startup_items;",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "runonceex_registry": {
+      "query": "SELECT key, path, name, data FROM registry WHERE key LIKE 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnceEx%%';",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "winlogon_helpers": {
+      "query": "SELECT path, name, data FROM registry WHERE key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon' AND name IN ('Shell', 'Userinit', 'Notify');",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "ifeo_debugger": {
+      "query": "SELECT key, name, data FROM registry WHERE key LIKE 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\%' AND name IN ('Debugger', 'GlobalFlag');",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "services": {
+      "query": "SELECT name, display_name, start_type, path, module_path, user_account FROM services;",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "scheduled_tasks": {
+      "query": "SELECT name, path, action, enabled, hidden FROM scheduled_tasks;",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "wmi_cli_consumers": {
+      "query": "SELECT name, command_line_template, executable_path FROM wmi_cli_event_consumers;",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "wmi_script_consumers": {
+      "query": "SELECT name, scripting_engine, script_file_name, script_text FROM wmi_script_event_consumers;",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "dns_server_plugin_dll": {
+      "query": "SELECT key, name, data FROM registry WHERE key = 'HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\services\\DNS\\Parameters' AND name = 'ServerLevelPluginDll';",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "amsi_disabled": {
+      "query": "SELECT r.path, r.data, u.username FROM registry r, users u WHERE r.path = 'HKEY_USERS\\' || u.uuid || '\\Software\\Microsoft\\Windows Script\\Settings\\AmsiEnable' AND r.data = '0';",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "telemetry_settings": {
+      "query": "SELECT path, data FROM registry WHERE path IN ('HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System\\Audit\\ProcessCreationIncludeCmdLine_Enabled', 'HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\PowerShell\\ScriptBlockLogging\\EnableScriptBlockLogging', 'HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\PowerShell\\ModuleLogging\\EnableModuleLogging', 'HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\PowerShell\\Transcription\\EnableTranscripting');",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "security_tooling_services": {
+      "query": "SELECT name, status, start_type FROM services WHERE name IN ('Sysmon64', 'Elastic Agent', 'ElasticEndpoint', 'WinDefend', 'EventLog');",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    },
+    "yara_user_writable": {
+      "query": "SELECT path, matches, count, strings FROM yara WHERE (path LIKE 'C:\\Users\\%%' OR path LIKE 'C:\\Windows\\Temp\\%%' OR path LIKE 'C:\\PerfLogs\\%%') AND sigfile = 'C:\\ProgramData\\yara\\yara-forge-core.yar' AND count > 0;",
+      "interval": 3600,
+      "platform": "windows",
+      "snapshot": false
+    }
+  }
+}
