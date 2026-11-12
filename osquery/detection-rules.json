@@ -1,0 +1,145 @@
+[
+  {
+    "type": "query",
+    "language": "kuery",
+    "index": [
+      "logs-osquery_manager.result-*"
+    ],
+    "interval": "5m",
+    "from": "now-6m",
+    "enabled": true,
+    "tags": [
+      "osquery",
+      "lab-custom"
+    ],
+    "author": [
+      "guardia lab"
+    ],
+    "license": "internal",
+    "references": [
+      "https://github.com/palantir/osquery-configuration"
+    ],
+    "rule_id": "9b5f0e7a-1c2d-4e3f-8a01-6f1a2b3c4d01",
+    "name": "osquery: new persistence entry on a Windows host",
+    "description": "A scheduled osquery check (pack lab-persistence-and-tooling) reported a new autostart entry: Run/RunOnceEx key or Startup folder item, Winlogon helper, IFEO debugger, service, scheduled task, WMI event consumer or DNS server plugin DLL. Differential results: only entries that appeared since the previous run; the baseline run (counter 0) is excluded.",
+    "severity": "medium",
+    "risk_score": 47,
+    "query": "pack_name:\"lab-persistence-and-tooling\" and osquery_meta.action:\"added\" and not osquery_meta.counter:0 and query_name:(startup_items or runonceex_registry or winlogon_helpers or ifeo_debugger or services or scheduled_tasks or wmi_cli_consumers or wmi_script_consumers or dns_server_plugin_dll)",
+    "threat": [
+      {
+        "framework": "MITRE ATT&CK",
+        "tactic": {
+          "id": "TA0003",
+          "name": "Persistence",
+          "reference": "https://attack.mitre.org/tactics/TA0003/"
+        },
+        "technique": [
+          {
+            "id": "T1547",
+            "name": "Boot or Logon Autostart Execution",
+            "reference": "https://attack.mitre.org/techniques/T1547/"
+          },
+          {
+            "id": "T1543",
+            "name": "Create or Modify System Process",
+            "reference": "https://attack.mitre.org/techniques/T1543/"
+          },
+          {
+            "id": "T1053",
+            "name": "Scheduled Task/Job",
+            "reference": "https://attack.mitre.org/techniques/T1053/"
+          },
+          {
+            "id": "T1546",
+            "name": "Event Triggered Execution",
+            "reference": "https://attack.mitre.org/techniques/T1546/"
+          }
+        ]
+      }
+    ],
+    "false_positives": [
+      "Software installation or updates creating services, tasks or Run keys",
+      "Group Policy or administrator changes"
+    ]
+  },
+  {
+    "type": "query",
+    "language": "kuery",
+    "index": [
+      "logs-osquery_manager.result-*"
+    ],
+    "interval": "5m",
+    "from": "now-6m",
+    "enabled": true,
+    "tags": [
+      "osquery",
+      "lab-custom"
+    ],
+    "author": [
+      "guardia lab"
+    ],
+    "license": "internal",
+    "references": [
+      "https://github.com/palantir/osquery-configuration"
+    ],
+    "rule_id": "9b5f0e7a-1c2d-4e3f-8a01-6f1a2b3c4d02",
+    "name": "osquery: YARA match in a user-writable folder",
+    "description": "The scheduled osquery YARA scan (YARA Forge Core rules) matched a file under C:\\Users, C:\\Windows\\Temp or C:\\PerfLogs. Includes matches found on the first scan.",
+    "severity": "high",
+    "risk_score": 73,
+    "query": "pack_name:\"lab-persistence-and-tooling\" and query_name:\"yara_user_writable\" and osquery_meta.action:\"added\"",
+    "false_positives": [
+      "Security or administration tools with signatures of offensive tools",
+      "Test files"
+    ]
+  },
+  {
+    "type": "query",
+    "language": "kuery",
+    "index": [
+      "logs-osquery_manager.result-*"
+    ],
+    "interval": "5m",
+    "from": "now-6m",
+    "enabled": true,
+    "tags": [
+      "osquery",
+      "lab-custom"
+    ],
+    "author": [
+      "guardia lab"
+    ],
+    "license": "internal",
+    "references": [
+      "https://github.com/palantir/osquery-configuration"
+    ],
+    "rule_id": "9b5f0e7a-1c2d-4e3f-8a01-6f1a2b3c4d03",
+    "name": "osquery: security tool or logging setting changed",
+    "description": "A scheduled osquery check reported a change to a security service (Sysmon, Elastic Agent, Elastic Defend, Microsoft Defender, Event Log), to command-line or PowerShell logging settings, or AMSI disabled for a user. Baseline run excluded, except for AMSI disabled.",
+    "severity": "high",
+    "risk_score": 73,
+    "query": "pack_name:\"lab-persistence-and-tooling\" and ((query_name:(security_tooling_services or telemetry_settings) and not osquery_meta.counter:0) or (query_name:\"amsi_disabled\" and osquery_meta.action:\"added\"))",
+    "threat": [
+      {
+        "framework": "MITRE ATT&CK",
+        "tactic": {
+          "id": "TA0005",
+          "name": "Defense Evasion",
+          "reference": "https://attack.mitre.org/tactics/TA0005/"
+        },
+        "technique": [
+          {
+            "id": "T1562",
+            "name": "Impair Defenses",
+            "reference": "https://attack.mitre.org/techniques/T1562/"
+          }
+        ]
+      }
+    ],
+    "note": "ATT&CK v19 moved defence impairment techniques (see T1685 in the emulation report); this mapping uses the pre-v19 ID and needs reconciliation.",
+    "false_positives": [
+      "Planned maintenance or upgrade of the security tools",
+      "Reboots (services stopping then starting)"
+    ]
+  }
+]
