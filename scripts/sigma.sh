@@ -3,7 +3,7 @@
 # Run on the siem VM:  sudo bash /vagrant/scripts/sigma.sh <setup|convert|coverage>
 #   setup     install the pinned toolchain in a venv and download the latest SigmaHQ Core+ release
 #   convert   convert the Windows rules to Kibana rule objects (NDJSON), not imported yet
-#   coverage  compare every field used by the converted rules with the fields present in Elasticsearch
+#   coverage  check that every field a converted rule uses is populated in the channel it reads
 set -euo pipefail
 S=/opt/sigma
 V=$S/venv
@@ -46,26 +46,50 @@ case "${1:-}" in
     ;;
 
   coverage)
-    # Fields that exist in the Windows data streams (any type)
-    curl -s --cacert $CA -u "elastic:${ELASTIC_PASSWORD}" \
-      "https://localhost:9200/logs-windows.*,logs-system.*,logs-endpoint.events.*,logs-winlog.*/_field_caps?fields=*" \
-      | jq -r '.fields | keys[]' > $S/es-fields.txt
-    $V/bin/python - "$S" <<'PY'
-import json, re, sys, collections
-S = sys.argv[1]
-known = set(open(f"{S}/es-fields.txt").read().split())
-pat = re.compile(r'\??([A-Za-z_@][\w.@]*)\s*(?:==|!=|:|like~?|regex~?|in~?|>=|<=|>|<)\s')
-missing = collections.Counter(); rules_missing = 0; total = 0
-for line in open(f"{S}/converted.ndjson"):
-    r = json.loads(line); total += 1
-    fields = {f for f in pat.findall(r.get("query", "")) if "." in f or f[0].isupper()}
-    gone = sorted(f for f in fields if f not in known)
-    if gone:
-        rules_missing += 1; missing.update(gone)
-print(f"rules: {total}, using at least one field absent from Elasticsearch: {rules_missing}")
-print("most frequent absent fields (field, rules):")
-for f, n in missing.most_common(40):
-    print(f"  {n:5d}  {f}")
+    # For every converted rule: is each field it uses actually populated in the log
+    # channel the rule reads? (A field can be mapped by an index template yet never filled.)
+    ELASTIC_PASSWORD="$ELASTIC_PASSWORD" $V/bin/python - "$S" "$CA" <<'PY'
+import json, re, sys, ssl, base64, os, collections, urllib.request
+S, CA = sys.argv[1], sys.argv[2]
+ctx = ssl.create_default_context(cafile=CA)
+auth = "Basic " + base64.b64encode(f"elastic:{os.environ['ELASTIC_PASSWORD']}".encode()).decode()
+IDX = "logs-windows.*,logs-system.*,logs-winlog.*,logs-endpoint.events.*"
+def count(field, channel):
+    flt = [{"exists": {"field": field}}]
+    if channel: flt.append({"term": {"winlog.channel": channel}})
+    req = urllib.request.Request(f"https://localhost:9200/{IDX}/_count", method="POST",
+        data=json.dumps({"query": {"bool": {"filter": flt}}}).encode(),
+        headers={"Authorization": auth, "Content-Type": "application/json"})
+    return json.load(urllib.request.urlopen(req, context=ctx))["count"]
+
+chan_re  = re.compile(r'winlog\.channel\s*(?::|==)\s*"([^"]+)"')
+str_re   = re.compile(r'"(?:\\.|[^"\\])*"')
+field_re = re.compile(r'\??([A-Za-z_@][\w.@]*)\s*(?:==|!=|:|like~?|regex~?|in~?|>=|<=|>|<)\s')
+cache, missing, rows = {}, collections.Counter(), []
+rules = [json.loads(l) for l in open(f"{S}/converted.ndjson")]
+for r in rules:
+    q = r.get("query", "")
+    chans = sorted(set(chan_re.findall(q))) or [None]
+    fields = {f for f in field_re.findall(str_re.sub('""', q)) if "." in f}
+    gone = []
+    for f in sorted(fields):
+        n = 0
+        for c in chans:
+            k = (f, c)
+            if k not in cache: cache[k] = count(f, c)
+            n += cache[k]
+        if n == 0: gone.append(f)
+    for f in gone: missing[(f, chans[0] or "any channel")] += 1
+    rows.append((r.get("name", "?"), ",".join(c or "-" for c in chans), " ".join(gone)))
+with open(f"{S}/coverage.tsv", "w") as out:
+    for row in rows: out.write("\t".join(row) + "\n")
+bad = sum(1 for r in rows if r[2])
+print(f"rules: {len(rows)}; with at least one field never populated in the channel they read: {bad}")
+print("note: a rule can also be silent only because no matching activity has happened yet")
+print("most frequent (rules, field, channel):")
+for (f, c), n in missing.most_common(40):
+    print(f"  {n:5d}  {f:45s} {c}")
+print(f"(per-rule detail: {S}/coverage.tsv)")
 PY
     ;;
   *) echo "usage: $0 setup|convert|coverage" >&2; exit 1 ;;
