@@ -84,10 +84,10 @@
     ],
     "rule_id": "9b5f0e7a-1c2d-4e3f-8a01-6f1a2b3c4d02",
     "name": "osquery: YARA match in a user-writable folder",
-    "description": "The scheduled osquery YARA scan (YARA Forge Core rules) matched a file under C:\\Users, C:\\Windows\\Temp or C:\\PerfLogs. Includes matches found on the first scan.",
+    "description": "A YARA scan (YARA Forge Core, scheduled pack or on-demand live query) matched a file. osquery.matches names the rule(s); osquery.path the file.",
     "severity": "high",
     "risk_score": 73,
-    "query": "pack_name:\"lab-persistence-and-tooling\" and query_name:\"yara_user_writable\" and osquery_meta.action:\"added\"",
+    "query": "osquery.sigfile:*yara-forge* and osquery.count>=1",
     "false_positives": [
       "Security or administration tools with signatures of offensive tools",
       "Test files"

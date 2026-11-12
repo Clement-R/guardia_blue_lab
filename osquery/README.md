@@ -19,3 +19,16 @@ Sources: [palantir/osquery-configuration](https://github.com/palantir/osquery-co
 | `telemetry_settings` | Defense impairment (logging disabled): a change or a removed row means tampering | Palantir windows-registry-monitoring (command_line_auditing_*, powershell_*_logging_*) |
 | `security_tooling_services` | Defense impairment (security tool stopped) | Palantir security-tooling-checks (adapted to this lab's tools) |
 | `yara_user_writable` | Malware / tool files on disk (YARA Forge Core) | lab |
+
+
+## YARA scanning (on-demand, not scheduled)
+
+The YARA Forge Core scan is a heavy folder sweep, so it is NOT in the scheduled pack. Run it on demand:
+`sudo bash /vagrant/scripts/osquery-yara.sh ['C:\Users\%%' ...]` — a live osquery query against dc01. Matches
+land in `logs-osquery_manager.result-*` and fire the "osquery: YARA match" rule (which matches any result with
+`osquery.sigfile:*yara-forge*` and `osquery.count>=1`, scheduled or live).
+
+## Pack interval control
+
+`sudo bash /vagrant/scripts/osquery-pack.sh [default_seconds] [query=seconds ...]` — set a global interval and/or
+per-query overrides, e.g. `osquery-pack.sh 3600 services=300 scheduled_tasks=300`.

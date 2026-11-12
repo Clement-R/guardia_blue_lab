@@ -1,6 +1,6 @@
 {
   "name": "lab-persistence-and-tooling",
-  "description": "Persistence, defence impairment and YARA checks for dc01. Adapted from palantir/osquery-configuration (commit 89c2ae5, 2020) and the official osquery windows-attacks pack.",
+  "description": "Persistence, defence impairment for dc01. Adapted from palantir/osquery-configuration (commit 89c2ae5, 2020) and the official osquery windows-attacks pack.",
   "enabled": true,
   "policy_ids": [
     "windows-endpoint"
@@ -74,12 +74,6 @@
     },
     "security_tooling_services": {
       "query": "SELECT name, status, start_type FROM services WHERE name IN ('Sysmon64', 'Elastic Agent', 'ElasticEndpoint', 'WinDefend', 'EventLog');",
-      "interval": 3600,
-      "platform": "windows",
-      "snapshot": false
-    },
-    "yara_user_writable": {
-      "query": "SELECT path, matches, count, strings, tags FROM yara WHERE (path LIKE 'C:\\Users\\%%' OR path LIKE 'C:\\Windows\\Temp\\%%' OR path LIKE 'C:\\PerfLogs\\%%') AND sigfile = 'C:\\ProgramData\\yara\\yara-forge-core.yar' AND count > 0;",
       "interval": 3600,
       "platform": "windows",
       "snapshot": false
