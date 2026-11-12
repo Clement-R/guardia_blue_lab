@@ -139,10 +139,20 @@ PY
   enable)
     # Enable one severity at a time, checking memory and scheduler load between steps:
     #   sigma.sh enable critical ; sigma.sh enable high ; sigma.sh enable medium ; sigma.sh enable low
+    # Rules are enabled by id in batches of 200, so one oversized request cannot fail them all.
     sev="${2:?severity: critical|high|medium|low}"
-    kb -X POST "$KB/api/detection_engine/rules/_bulk_action" -H 'Content-Type: application/json' \
-      -d "$(jq -n --arg q "alert.attributes.tags:\"$TAG\" AND alert.attributes.params.severity:\"$sev\"" '{action:"enable", query:$q}')" \
-      | jq -c '.attributes.summary'
+    kb "$KB/api/detection_engine/rules/_find?per_page=10000&filter=alert.attributes.tags:%22$TAG%22%20AND%20alert.attributes.enabled:false" \
+      | jq -r --arg sev "$sev" '.data[] | select(.severity == $sev) | .id' > $S/to-enable.txt
+    echo "$sev rules to enable: $(wc -l < $S/to-enable.txt)"
+    split -l 200 $S/to-enable.txt $S/to-enable-part-
+    for part in $S/to-enable-part-*; do
+      resp=$(curl -sS --cacert $CA -u "elastic:${ELASTIC_PASSWORD}" -H 'kbn-xsrf: true' \
+        -H 'elastic-api-version: 2023-10-31' -H 'Content-Type: application/json' \
+        -X POST "$KB/api/detection_engine/rules/_bulk_action" \
+        -d "$(jq -R . $part | jq -s '{action:"enable", ids:.}')")
+      jq -c '.attributes.summary // .' <<<"$resp" | cut -c1-300
+    done
+    rm -f $S/to-enable-part-*
     health
     ;;
 
