@@ -12,8 +12,11 @@ $p = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit"
 New-Item $p -Force | Out-Null
 Set-ItemProperty $p ProcessCreationIncludeCmdLine_Enabled 1 -Type DWord
 
-auditpol /backup /file:C:\lab\auditpol-before.csv | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "auditpol backup failed" }
+# Capture the pristine audit policy once (first provision); don't overwrite on re-runs
+if (-not (Test-Path C:\lab\auditpol-before.csv)) {
+  auditpol /backup /file:C:\lab\auditpol-before.csv | Out-Null
+  if ($LASTEXITCODE -ne 0) { Write-Warning "auditpol backup failed (continuing)" }
+}
 $audit = @(
   # subcategory,                        success, failure
   @("Process Creation",                     $true,  $false),
