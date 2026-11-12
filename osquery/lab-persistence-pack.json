@@ -79,7 +79,7 @@
       "snapshot": false
     },
     "yara_user_writable": {
-      "query": "SELECT path, matches, count FROM yara WHERE (path LIKE 'C:\\Users\\%%' OR path LIKE 'C:\\Windows\\Temp\\%%' OR path LIKE 'C:\\PerfLogs\\%%') AND sigfile = 'C:\\ProgramData\\yara\\yara-forge-core.yar' AND count > 0;",
+      "query": "SELECT path, matches, count, strings, tags FROM yara WHERE (path LIKE 'C:\\Users\\%%' OR path LIKE 'C:\\Windows\\Temp\\%%' OR path LIKE 'C:\\PerfLogs\\%%') AND sigfile = 'C:\\ProgramData\\yara\\yara-forge-core.yar' AND count > 0;",
       "interval": 3600,
       "platform": "windows",
       "snapshot": false
