@@ -160,11 +160,21 @@ PY
     # After at least one full cycle (10 min): last result of every enabled Sigma rule, failures with message
     kb "$KB/api/detection_engine/rules/_find?per_page=10000&filter=alert.attributes.tags:%22$TAG%22%20AND%20alert.attributes.enabled:true" \
       | jq -r '.data[] | [(.execution_summary.last_execution.status // "not run yet"), .severity, .name,
-               (.execution_summary.last_execution.message // "" | gsub("[\n\t]";" ") | .[0:200])] | @tsv' \
+               (.execution_summary.last_execution.message // "" | gsub("[\n\t]";" ") | .[0:2000])] | @tsv' \
       | sort > $S/sigma-rules-status.tsv
     cut -f1 $S/sigma-rules-status.tsv | sort | uniq -c
-    echo "--- failure messages, grouped (count, first 90 chars):"
-    grep -v '^succeeded' $S/sigma-rules-status.tsv | cut -f4 | cut -c1-90 | sort | uniq -c | sort -rn | head -25
+    echo "--- problems in failed rules (rules affected, problem):"
+    # Each error lists problems as "line L:C: <text>"; count each distinct problem once per rule
+    $V/bin/python - $S/sigma-rules-status.tsv <<'PY'
+import re, sys, collections
+c = collections.Counter()
+for line in open(sys.argv[1]):
+    status, sev, name, msg = (line.rstrip("\n").split("\t") + ["", "", "", ""])[:4]
+    if status != "failed": continue
+    probs = re.findall(r"line \d+:\d+: (.+?)(?=\s*line \d+:\d+:|$)", msg) or [msg[:120]]
+    for p in {re.sub(r"\s+", " ", p)[:140] for p in probs}: c[p] += 1
+for p, n in c.most_common(30): print(f"  {n:4d}  {p}")
+PY
     echo "(full list: $S/sigma-rules-status.tsv)"
     health
     ;;
