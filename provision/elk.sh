@@ -122,6 +122,16 @@ winlog.codeintegrity|Microsoft-Windows-CodeIntegrity/Operational
 winlog.wmi_activity|Microsoft-Windows-WMI-Activity/Operational
 EOF
 
+# --- Osquery Manager on the Windows policy: live and scheduled queries from Kibana,
+#     including YARA scans of files with the rules deployed by win-yara.ps1 ---
+if ! kb "$KB/api/fleet/package_policies?perPage=1000" | jq -e '.items[] | select(.package.name=="osquery_manager" and (.policy_ids | index("windows-endpoint")))' >/dev/null; then
+  ver=$(kb "$KB/api/fleet/epm/packages/osquery_manager" | jq -r '.item.version // .response.version')
+  kb -X POST "$KB/api/fleet/package_policies" -d "{
+    \"name\":\"osquery-windows\",\"namespace\":\"default\",\"policy_ids\":[\"windows-endpoint\"],
+    \"package\":{\"name\":\"osquery_manager\",\"version\":\"${ver}\"}}" >/dev/null && echo "added osquery-windows" \
+    || echo "WARN: could not add Osquery Manager; add it once in Kibana (Fleet > Windows endpoint)" >&2
+fi
+
 # --- Elastic Defend on the Windows policy: Complete EDR preset, malware in Detect mode,
 #     not registered as the Windows antivirus (Microsoft Defender stays active) ---
 defend_id=$(kb "$KB/api/fleet/package_policies?perPage=100&kuery=ingest-package-policies.package.name:endpoint" \

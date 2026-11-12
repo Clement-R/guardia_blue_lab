@@ -73,5 +73,6 @@ Vagrant.configure("2") do |config|
     m.vm.provision "agent", type: "shell", path: "provision/win-agent.ps1"
     # Run explicitly, after the "clean" snapshot: vagrant provision dc --provision-with art
     m.vm.provision "art", type: "shell", path: "provision/win-art.ps1", run: "never"
+    m.vm.provision "yara", type: "shell", path: "provision/win-yara.ps1"
   end
 end
