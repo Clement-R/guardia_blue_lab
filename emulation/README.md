@@ -49,6 +49,22 @@ Preparation (once): install atomics and fetch prerequisites, then snapshot:
    `ssh Administrator@10.77.77.20 'powershell -NoProfile -ExecutionPolicy Bypass -File C:\AtomicRedTeam\win-emulate.ps1 -Plan wizardspider -RunId prep -GetPrereqs'`
    `vagrant snapshot save dc art-primed`
 
+## ADS validation (gap closure)
+
+The ADS rules for findings F-01 and F-02 live in `detections/ads-rules.json` (ADS-1 archiver, ADS-2
+recon/staging burst). To show a gap is closed, deploy them and re-run only the gap tests:
+
+1. `vagrant ssh siem -c 'sudo bash /vagrant/scripts/ads-rules.sh'` (expect `created:` for both rules)
+2. Restore the DC as for a run (`snapshot restore` + `vagrant up dc --no-provision`), resync the clock
+3. `scp emulation/adsval-plan.csv Administrator@10.77.77.20:C:/AtomicRedTeam/plans/adsval.csv`
+4. `ssh Administrator@10.77.77.20 'powershell -NoProfile -ExecutionPolicy Bypass -File C:\AtomicRedTeam\win-emulate.ps1 -Plan adsval -RunId run-adsval-1'`
+5. `scripts/pull-evidence.sh run-adsval-1`, then wait T1 + 25 min (Sigma 10-min interval + ADS-2's 20-min lookback)
+6. `vagrant rsync siem` and `vagrant ssh siem -c 'sudo bash /vagrant/scripts/validate-ads.sh <T0> <T1>'`
+
+Closed = ADS-1 shows a visible alert on the 7-Zip command line, and ADS-2 shows a visible threshold alert
+for dc01 with four or more distinct building-block rules. The second block of the output lists the building
+blocks ADS-2 counted, which is the evidence if it did not fire.
+
 ## Defender decision
 
 Record whether Microsoft Defender is on or off for the runs. The reference disabled it to measure

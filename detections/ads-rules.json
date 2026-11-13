@@ -1,0 +1,155 @@
+[
+  {
+    "type": "eql",
+    "language": "eql",
+    "index": [
+      "logs-endpoint.events.process-*",
+      "logs-windows.sysmon_operational-*"
+    ],
+    "interval": "5m",
+    "from": "now-6m",
+    "enabled": true,
+    "tags": [
+      "ADS",
+      "lab-custom",
+      "Collection"
+    ],
+    "author": [
+      "guardia lab"
+    ],
+    "license": "internal",
+    "rule_id": "cffe64ec-f261-4861-95d2-daea7fd5a4b0",
+    "name": "ADS-1: Password-protected archive created with a command-line archiver",
+    "description": "A known archiver (7-Zip or WinRAR, matched by original file name or process name) created or updated an archive with a password. Covers the a and u sub-commands and the -p / -hp switches; the earlier archiver coverage keyed on the a sub-command only and raised building-block alerts. Closes finding F-01.",
+    "severity": "medium",
+    "risk_score": 47,
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  (process.pe.original_file_name : (\"7z.exe\", \"7za.exe\", \"7zr.exe\", \"7zG.exe\", \"Rar.exe\", \"WinRAR.exe\") or\n   process.name : (\"7z.exe\", \"7za.exe\", \"7zr.exe\", \"7zG.exe\", \"rar.exe\", \"winrar.exe\")) and\n  process.args : (\"a\", \"u\") and\n  process.args : (\"-p*\", \"-hp*\")",
+    "false_positives": [
+      "Legitimate password-protected archiving by IT, backup jobs or developers; exclude known backup/service accounts and software-distribution hosts."
+    ],
+    "threat": [
+      {
+        "framework": "MITRE ATT&CK",
+        "tactic": {
+          "id": "TA0009",
+          "name": "Collection",
+          "reference": "https://attack.mitre.org/tactics/TA0009/"
+        },
+        "technique": [
+          {
+            "id": "T1560",
+            "name": "Archive Collected Data",
+            "reference": "https://attack.mitre.org/techniques/T1560/",
+            "subtechnique": [
+              {
+                "id": "T1560.001",
+                "name": "Archive via Utility",
+                "reference": "https://attack.mitre.org/techniques/T1560/001/"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "threshold",
+    "language": "kuery",
+    "index": [
+      ".alerts-security.alerts-default"
+    ],
+    "interval": "5m",
+    "from": "now-20m",
+    "enabled": true,
+    "tags": [
+      "ADS",
+      "lab-custom",
+      "Discovery"
+    ],
+    "author": [
+      "guardia lab"
+    ],
+    "license": "internal",
+    "rule_id": "85ae44bc-ebb6-4b8d-9d8e-aadd9cad1efe",
+    "name": "ADS-2: Burst of reconnaissance and staging activity on one host",
+    "description": "Four or more distinct building-block detections (discovery and staging) for the same host and user. Each command alone stays a building block; the burst is promoted to one visible alert. The 20-minute lookback covers the 10-minute Sigma rule interval, so building blocks raised by rules on different schedules still land in the same window. The emulation harness's own preamble rules are excluded. Closes finding F-02.",
+    "severity": "medium",
+    "risk_score": 47,
+    "query": "kibana.alert.building_block_type:* and host.name:* and user.name:* and not kibana.alert.rule.name:(\"Windows Account or Group Discovery\" or \"Windows System Information Discovery\")",
+    "threshold": {
+      "field": [
+        "host.name",
+        "user.name"
+      ],
+      "value": 4,
+      "cardinality": [
+        {
+          "field": "kibana.alert.rule.name",
+          "value": 4
+        }
+      ]
+    },
+    "false_positives": [
+      "Inventory and vulnerability scanners, osquery and Elastic Agent activity, logon/GPO scripts; exclude known service/automation accounts and management hosts."
+    ],
+    "threat": [
+      {
+        "framework": "MITRE ATT&CK",
+        "tactic": {
+          "id": "TA0007",
+          "name": "Discovery",
+          "reference": "https://attack.mitre.org/tactics/TA0007/"
+        },
+        "technique": [
+          {
+            "id": "T1016",
+            "name": "System Network Configuration Discovery",
+            "reference": "https://attack.mitre.org/techniques/T1016/"
+          },
+          {
+            "id": "T1057",
+            "name": "Process Discovery",
+            "reference": "https://attack.mitre.org/techniques/T1057/"
+          },
+          {
+            "id": "T1082",
+            "name": "System Information Discovery",
+            "reference": "https://attack.mitre.org/techniques/T1082/"
+          },
+          {
+            "id": "T1087",
+            "name": "Account Discovery",
+            "reference": "https://attack.mitre.org/techniques/T1087/"
+          },
+          {
+            "id": "T1069",
+            "name": "Permission Groups Discovery",
+            "reference": "https://attack.mitre.org/techniques/T1069/"
+          }
+        ]
+      },
+      {
+        "framework": "MITRE ATT&CK",
+        "tactic": {
+          "id": "TA0009",
+          "name": "Collection",
+          "reference": "https://attack.mitre.org/tactics/TA0009/"
+        },
+        "technique": [
+          {
+            "id": "T1560",
+            "name": "Archive Collected Data",
+            "reference": "https://attack.mitre.org/techniques/T1560/",
+            "subtechnique": [
+              {
+                "id": "T1560.001",
+                "name": "Archive via Utility",
+                "reference": "https://attack.mitre.org/techniques/T1560/001/"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

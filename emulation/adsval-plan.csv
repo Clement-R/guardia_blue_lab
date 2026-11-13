@@ -1,0 +1,7 @@
+Order,Technique,Tactic,Phase,TestGuid,Name,NameHint,Notes
+1,T1082,Discovery,Host discovery,66703791-c902-4560-8770-42b8a91f7667,System Information Discovery,,ADS-2 burst (same GUID as run-ec-1)
+2,T1016,Discovery,Network discovery,970ab6a1-0157-4f3f-9a73-ec4166754b23,System Network Configuration Discovery,,ADS-2 burst; F-02 gap test
+3,T1057,Discovery,Process discovery,c5806a4f-62b8-4900-980b-c7ec004e9908,Process Discovery - tasklist,,ADS-2 burst; F-02 gap test
+4,T1087.001,Discovery,Local account discovery,80887bec-5a9b-4efc-a81d-f83eb2eb32ab,Enumerate all accounts (Local),,ADS-2 burst
+5,T1069.001,Discovery,Local group discovery,1f454dd6-e134-44df-bebb-67de70fb6cd8,Permission Groups Discovery (Local),,ADS-2 burst
+6,T1560.001,Collection,Archive collected data,d1334303-59cb-4a03-8313-b3e24d02c198,Compress Data and lock with password for Exfiltration with 7zip,,ADS-1 gap test (F-01); also feeds ADS-2
