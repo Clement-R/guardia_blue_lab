@@ -3,10 +3,10 @@
   "versions": {
     "layer": "4.5",
     "navigator": "5.0.0",
-    "attack": "19.2"
+    "attack": "20"
   },
   "domain": "enterprise-attack",
-  "description": "Host-based detection coverage from two adversary-emulation runs against dc01 (lab.local). Green = visible alert; amber = building-block only (detection gap). Generated from the scored outcomes of run-ec-1 (Evil Corp) and run-ws-1 (Wizard Spider). Mapped against ATT&CK v19 (Defense Evasion split into Stealth / Defense Impairment).",
+  "description": "Host-based detection coverage from two adversary-emulation runs against dc01 (lab.local). Green = visible alert in the emulation runs; blue = gap found in the runs and closed by a new ADS, validated on re-test. Generated from the scored outcomes of run-ec-1 (Evil Corp) and run-ws-1 (Wizard Spider), plus the ADS validation runs run-adsval-1 and run-adsval-3. Mapped against ATT&CK v20 (no change to these techniques since v19, which split Defense Evasion into Stealth / Defense Impairment).",
   "sorting": 0,
   "layout": {
     "layout": "side",
@@ -24,8 +24,8 @@
     { "techniqueID": "T1105", "color": "#56a64b", "comment": "Alerted both runs. Certutil download." },
     { "techniqueID": "T1071.001", "color": "#56a64b", "comment": "run-ec-1: Alerted (10 vis). Malicious user agents." },
     { "techniqueID": "T1082", "color": "#56a64b", "comment": "run-ec-1: Alerted (1 vis, TTD 401s, Sigma-only)." },
-    { "techniqueID": "T1016", "color": "#f2a900", "comment": "Building-block only in BOTH runs — detection gap. F-02 / ADS-2." },
-    { "techniqueID": "T1057", "color": "#f2a900", "comment": "run-ec-1: Building-block only — detection gap. F-02 / ADS-2." },
+    { "techniqueID": "T1016", "color": "#3b82c4", "comment": "Building-block only in both runs (F-02). Closed by ADS-2: visible correlated alert in run-adsval-1." },
+    { "techniqueID": "T1057", "color": "#3b82c4", "comment": "run-ec-1: building-block only (F-02). Closed by ADS-2: visible correlated alert in run-adsval-1." },
     { "techniqueID": "T1087.001", "color": "#56a64b", "comment": "run-ec-1: Alerted (TTD 350s, Sigma-only). Local account discovery." },
     { "techniqueID": "T1087.002", "color": "#56a64b", "comment": "run-ws-1: Alerted (TTD 607s, Sigma-only). Domain account discovery." },
     { "techniqueID": "T1069.001", "color": "#56a64b", "comment": "run-ec-1: Alerted (Elastic-only). Local permission groups." },
@@ -44,18 +44,28 @@
     { "techniqueID": "T1055.001", "color": "#56a64b", "comment": "run-ws-1: Alerted (5 vis). Process injection via mavinject." },
     { "techniqueID": "T1685", "color": "#56a64b", "comment": "run-ec-1: Alerted (7 vis). Disable or Modify Tools (Defender tamper). v19 Defense Impairment." },
     { "techniqueID": "T1685.005", "color": "#56a64b", "comment": "run-ec-1: Alerted (6 vis). Clear event logs. v19." },
-    { "techniqueID": "T1560.001", "color": "#f2a900", "comment": "run-ec-1: Building-block only; run-ws-1 'alerted' is attribution bleed — gap persists. F-01 / ADS-1." },
+    { "techniqueID": "T1560.001", "color": "#3b82c4", "comment": "Not executed in run-ec-1 / run-ws-1: 7-Zip prerequisite failed (BITS 0x800704DD in session 0) and the exit code was masked (F-01). ADS-1 raised a visible alert in run-adsval-3." },
     { "techniqueID": "T1567.002", "color": "#56a64b", "comment": "Alerted both runs (TTD 16-23s). Rclone exfiltration." },
     { "techniqueID": "T1490", "color": "#56a64b", "comment": "Alerted both runs. Inhibit system recovery (bcdedit / vssadmin)." }
   ],
   "gradient": {
-    "colors": ["#ff6666", "#ffe766", "#8ec843"],
+    "colors": [
+      "#ff6666",
+      "#ffe766",
+      "#8ec843"
+    ],
     "minValue": 0,
     "maxValue": 100
   },
   "legendItems": [
-    { "label": "Visible alert", "color": "#56a64b" },
-    { "label": "Building-block only (detection gap)", "color": "#f2a900" }
+    {
+      "label": "Visible alert",
+      "color": "#56a64b"
+    },
+    {
+      "label": "Gap closed by ADS (validated on re-test)",
+      "color": "#3b82c4"
+    }
   ],
   "showTacticRowBackground": false,
   "tacticRowBackground": "#dddddd",
