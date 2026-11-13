@@ -7,7 +7,7 @@
       "logs-windows.sysmon_operational-*"
     ],
     "interval": "5m",
-    "from": "now-6m",
+    "from": "now-9m",
     "enabled": true,
     "tags": [
       "ADS",
@@ -23,7 +23,7 @@
     "description": "A known archiver (7-Zip or WinRAR, matched by original file name or process name) created or updated an archive with a password. Covers the a and u sub-commands and the -p / -hp switches; the earlier archiver coverage keyed on the a sub-command only and raised building-block alerts. Closes finding F-01.",
     "severity": "medium",
     "risk_score": 47,
-    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  (process.pe.original_file_name : (\"7z.exe\", \"7za.exe\", \"7zr.exe\", \"7zG.exe\", \"Rar.exe\", \"WinRAR.exe\") or\n   process.name : (\"7z.exe\", \"7za.exe\", \"7zr.exe\", \"7zG.exe\", \"rar.exe\", \"winrar.exe\")) and\n  process.args : (\"a\", \"u\") and\n  process.args : (\"-p*\", \"-hp*\")",
+    "query": "process where host.os.type == \"windows\" and event.type : \"start\" and\n  (process.pe.original_file_name : (\"7z.exe\", \"7za.exe\", \"7zr.exe\", \"7zG.exe\", \"Rar.exe\", \"WinRAR.exe\") or\n   process.name : (\"7z.exe\", \"7za.exe\", \"7zr.exe\", \"7zG.exe\", \"rar.exe\", \"winrar.exe\")) and\n  process.args : (\"a\", \"u\") and\n  process.args : (\"-p*\", \"-hp*\")",
     "false_positives": [
       "Legitimate password-protected archiving by IT, backup jobs or developers; exclude known backup/service accounts and software-distribution hosts."
     ],
@@ -50,7 +50,8 @@
           }
         ]
       }
-    ]
+    ],
+    "timestamp_override": "event.ingested"
   },
   {
     "type": "threshold",
