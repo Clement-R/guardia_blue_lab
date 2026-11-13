@@ -32,7 +32,7 @@ rules, provisioning `curl` downloads) is excluded before scoring.
 ## Procedure (per run)
 
 On the host:
-1. `vagrant snapshot restore dc art-primed --no-provision`
+1. `vagrant snapshot restore dc art-primed --no-provision`, then `vagrant up dc --no-provision` — the libvirt snapshot is disk-only, so the restore reverts the disk but leaves the DC powered off
 2. `vagrant winrm dc -c 'w32tm /resync /force; w32tm /stripchart /computer:pool.ntp.org /samples:2 /dataonly'` — proceed only if offset < 1 s
 3. `vagrant ssh siem -c 'sudo bash /vagrant/scripts/health.sh 3 10'` — confirm no late rules / no breaker trips before starting
 4. Run the plan over SSH to the DC (session 0: sshd -> cmd -> powershell), e.g.:

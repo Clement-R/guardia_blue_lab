@@ -1,0 +1,64 @@
+{
+  "name": "Guardia Lab — Week 1 Host Detection Coverage (Evil Corp & Wizard Spider)",
+  "versions": {
+    "layer": "4.5",
+    "navigator": "5.0.0",
+    "attack": "19.2"
+  },
+  "domain": "enterprise-attack",
+  "description": "Host-based detection coverage from two adversary-emulation runs against dc01 (lab.local). Green = visible alert; amber = building-block only (detection gap). Generated from the scored outcomes of run-ec-1 (Evil Corp) and run-ws-1 (Wizard Spider). Mapped against ATT&CK v19 (Defense Evasion split into Stealth / Defense Impairment).",
+  "sorting": 0,
+  "layout": {
+    "layout": "side",
+    "showID": true,
+    "showName": true,
+    "showAggregateScores": false
+  },
+  "hideDisabled": false,
+  "techniques": [
+    { "techniqueID": "T1027", "color": "#56a64b", "comment": "Alerted both runs (13 vis). Base64-encoded PowerShell." },
+    { "techniqueID": "T1047", "color": "#56a64b", "comment": "run-ec-1: Alerted (5 vis, TTD 88s). WMI process creation." },
+    { "techniqueID": "T1127.001", "color": "#56a64b", "comment": "run-ec-1: Alerted (6 vis). MSBuild inline tasks." },
+    { "techniqueID": "T1218.011", "color": "#56a64b", "comment": "run-ec-1: Alerted (10 vis). Technique failed (exit -1) but attempt detected." },
+    { "techniqueID": "T1197", "color": "#56a64b", "comment": "run-ws-1: Alerted (4 vis). BITS transfer failed but attempt detected." },
+    { "techniqueID": "T1105", "color": "#56a64b", "comment": "Alerted both runs. Certutil download." },
+    { "techniqueID": "T1071.001", "color": "#56a64b", "comment": "run-ec-1: Alerted (10 vis). Malicious user agents." },
+    { "techniqueID": "T1082", "color": "#56a64b", "comment": "run-ec-1: Alerted (1 vis, TTD 401s, Sigma-only)." },
+    { "techniqueID": "T1016", "color": "#f2a900", "comment": "Building-block only in BOTH runs — detection gap. F-02 / ADS-2." },
+    { "techniqueID": "T1057", "color": "#f2a900", "comment": "run-ec-1: Building-block only — detection gap. F-02 / ADS-2." },
+    { "techniqueID": "T1087.001", "color": "#56a64b", "comment": "run-ec-1: Alerted (TTD 350s, Sigma-only). Local account discovery." },
+    { "techniqueID": "T1087.002", "color": "#56a64b", "comment": "run-ws-1: Alerted (TTD 607s, Sigma-only). Domain account discovery." },
+    { "techniqueID": "T1069.001", "color": "#56a64b", "comment": "run-ec-1: Alerted (Elastic-only). Local permission groups." },
+    { "techniqueID": "T1069.002", "color": "#56a64b", "comment": "run-ws-1: Alerted (10 vis). Domain permission groups." },
+    { "techniqueID": "T1018", "color": "#56a64b", "comment": "run-ws-1: Alerted (Elastic-only). Remote system discovery (nltest)." },
+    { "techniqueID": "T1482", "color": "#56a64b", "comment": "run-ws-1: Alerted (TTD 22s). Domain trust discovery." },
+    { "techniqueID": "T1547.001", "color": "#56a64b", "comment": "run-ec-1: Alerted. Registry Run key." },
+    { "techniqueID": "T1053.005", "color": "#56a64b", "comment": "Alerted both runs (TTD ~254-273s, Sigma-only). Scheduled task." },
+    { "techniqueID": "T1543.003", "color": "#56a64b", "comment": "run-ec-1: Alerted. Service installation." },
+    { "techniqueID": "T1558.003", "color": "#56a64b", "comment": "run-ws-1: Alerted (TTD 32s) on the Rubeus TOOL signature, not the 4769 behaviour. F-03 / ADS-3." },
+    { "techniqueID": "T1003.001", "color": "#56a64b", "comment": "Alerted both runs (25 vis). LSASS via comsvcs. Succeeded on the DC — no LSA protection. F-04." },
+    { "techniqueID": "T1003.002", "color": "#56a64b", "comment": "run-ec-1: Alerted (13 vis). SAM registry dump." },
+    { "techniqueID": "T1003.003", "color": "#56a64b", "comment": "run-ws-1: Alerted (7 vis, TTD 76s). NTDS.dit via ntdsutil — behavioural." },
+    { "techniqueID": "T1136.001", "color": "#56a64b", "comment": "run-ws-1: Alerted (9 vis). Create admin user." },
+    { "techniqueID": "T1036.003", "color": "#56a64b", "comment": "run-ec-1: Alerted (17 vis, TTD 47s). Masquerading." },
+    { "techniqueID": "T1055.001", "color": "#56a64b", "comment": "run-ws-1: Alerted (5 vis). Process injection via mavinject." },
+    { "techniqueID": "T1685", "color": "#56a64b", "comment": "run-ec-1: Alerted (7 vis). Disable or Modify Tools (Defender tamper). v19 Defense Impairment." },
+    { "techniqueID": "T1685.005", "color": "#56a64b", "comment": "run-ec-1: Alerted (6 vis). Clear event logs. v19." },
+    { "techniqueID": "T1560.001", "color": "#f2a900", "comment": "run-ec-1: Building-block only; run-ws-1 'alerted' is attribution bleed — gap persists. F-01 / ADS-1." },
+    { "techniqueID": "T1567.002", "color": "#56a64b", "comment": "Alerted both runs (TTD 16-23s). Rclone exfiltration." },
+    { "techniqueID": "T1490", "color": "#56a64b", "comment": "Alerted both runs. Inhibit system recovery (bcdedit / vssadmin)." }
+  ],
+  "gradient": {
+    "colors": ["#ff6666", "#ffe766", "#8ec843"],
+    "minValue": 0,
+    "maxValue": 100
+  },
+  "legendItems": [
+    { "label": "Visible alert", "color": "#56a64b" },
+    { "label": "Building-block only (detection gap)", "color": "#f2a900" }
+  ],
+  "showTacticRowBackground": false,
+  "tacticRowBackground": "#dddddd",
+  "selectTechniquesAcrossTactics": true,
+  "selectSubtechniquesWithParent": false
+}
